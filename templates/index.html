@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=0.7">
+  <title>Magic_XML</title>
+  
+  <style>
+
+    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@100&display=swap');
+    
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: 'Montserrat', sans-serif;
+      color: #F9F6EF;
+      display: grid;
+      place-content: center;
+      background-image: 
+        radial-gradient(
+        circle at 50% 50%,
+          #2f3040,
+          #1f2020
+        );
+    }
+
+    h1 {
+      color: whitesmoke;
+      margin-top: 15;
+      text-align: center;
+    }
+
+    form {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-top: 20px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 10px;
+    }
+
+    input[type="text"] {
+      width: 300px;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 16px;
+    }
+
+    button {
+      display: block;
+      width: 200px;
+      padding: 10px 20px;
+      font-size: 18px;
+      color: whitesmoke;
+      background-color: blueviolet;
+      text-decoration: none;
+      border-radius: 5px;
+      text-align: center;
+      margin: 0 auto;
+      margin-top: 20px;
+      font-family: 'Cormorant Garamond', serif;
+    }
+    
+    #resultDiv {
+      margin-top: 20px;
+    }
+
+    #downloadLink {
+      display: none;
+      margin-top: 10px;
+      color: #007bff;
+      text-decoration: none;
+      font-size: 16px;
+    }
+
+    #contactInfo {
+      margin-top: 20px;
+      font-size: 14px;
+      color: whitesmoke;
+    }
+  </style>
+
+  <!-- Yandex.Metrika counter -->
+  <script type="text/javascript" >
+     (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+     m[i].l=1*new Date();
+     for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
+     k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+     (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+     ym(96422591, "init", {
+          clickmap:true,
+          trackLinks:true,
+          accurateTrackBounce:true,
+          webvisor:true
+     });
+  </script>
+  <noscript><div><img src="https://mc.yandex.ru/watch/96422591" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
+  <!-- /Yandex.Metrika counter -->
+  
+</head>
+<body>
+  <h1>Вставьте ссылку:</h1>
+  <form id="linkForm">
+    <label for="linkUrl">URL-ссылка:</label>
+    <input type="text" id="linkUrl" name="linkUrl" required>
+    <button type="submit">Обработать</button>
+  </form>
+
+  <div id="resultDiv"></div>
+  <a href="#" id="downloadLink" style="display: none;">Скачать CSV</a>
+
+  <p id="contactInfo">Если у вас возникнут проблемы, свяжитесь со мной по адресу: reveni324@gmail.com</p>
+
+  <script>
+    document.getElementById('linkForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const linkUrl = document.getElementById('linkUrl').value;
+       
+      const response = await fetch('/process_link', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ link_url: linkUrl })
+      });
+       
+      const data = await response.json();
+      const resultDiv = document.getElementById('resultDiv');
+      resultDiv.innerHTML = `<p>${data.message}</p>`;
+       
+      if (data.download_url) {
+        const downloadLink = document.getElementById('downloadLink');
+        downloadLink.style.display = 'block';
+        downloadLink.href = data.download_url;
+      }
+    });
+  </script>
+</body>
+</html>

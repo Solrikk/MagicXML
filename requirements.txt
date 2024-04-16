@@ -1,0 +1,5 @@
+fastapi==0.78.0
+uvicorn[standard]
+spacy==3.2.1
+ru_core_news_sm @ https://github.com/explosion/spacy-models/releases/download/ru_core_news_sm-3.2.0/ru_core_news_sm-3.2.0.tar.gz
+requests==2.26.0
