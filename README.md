@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="assets/searching.png" width="30%"/>
+  <img src="assets/working.png" width="30%"/>
 </div>
 
 # Magic-XML ⚡️
