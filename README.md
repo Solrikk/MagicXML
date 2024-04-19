@@ -12,15 +12,49 @@
   <h3> <a href="https://github.com/Solrikk/MagicXML/blob/main/README.md"> English | <a href="https://github.com/Solrikk/MagicXML/blob/main/README_RU.md">Русский</a> | <a href="https://github.com/Solrikk/MagicXML/blob/main/README_GE.md"> Deutsch </a> | <a href="https://github.com/Solrikk/MagicXML/blob/main/README_JP.md"> 日本語 </a> | <a href="README_KR.md">한국어</a> | <a href="README_CN.md">中文</a> </h3>
 </div>
 
-**_Magic-XML_** is a modern web application designed for the convenient and fast conversion of data from XML files into the CSV format. The application utilizes the power of FastAPI for high-performance request processing and applies machine learning algorithms and natural language processing for efficient analysis and classification of textual information. Magic-XML is perfectly suited for data analysts, developers, and anyone working with large volumes of XML data and looking to optimize and simplify their analysis.
+**_Magic-XML_** — это современное веб-приложение, разработанное для удобного и быстрого преобразования данных из XML файлов в формат CSV. Приложение использует мощь FastAPI для обеспечения высокой производительности обработки запросов, а также применяет алгоритмы машинного обучения и обработки естественного языка для эффективного анализа и классификации текстовой информации. Magic-XML идеально подходит для аналитиков данных, разработчиков и всех, кто работает с большим объемом данных в формате XML и стремится к их оптимизации и упрощению анализа.
 
-**_Features_** - Automatic data classification and cleaning. Magic-XML automatically classifies information from XML into categories and cleanses textual data from unwanted HTML tags, ensuring the purity and readability of the final CSV file.
 
-**_Ease of working with custom categories_** - Ease of working with custom categories - Users can set their own categories for data classification, making the application flexible and adaptable to specific project requirements.
+**Зависимости**
+- `fastapi` - фреймворк для создания API с автоматической документацией.
+- `uvicorn` - ASGI-сервер для запуска FastAPI приложения.
+- `requests` - библиотека для выполнения HTTP-запросов.
+- `xml.etree.ElementTree` - модуль для обработки XML.
+- `csv` - модуль для работы с CSV-файлами.
+- `os` - модуль для работы с операционной системой, нужен для создания директории.
+- `Jinja2Templates` из инструмент для работы с шаблонами Jinja2.
+- `StaticFiles` - для обслуживания статических файлов.
+- `BaseModel` из `pydantic` - для валидации данных.
+- `FileResponse` для отправки файлов в ответах.
+- `spacy` - для обработки естественного языка, используется для категоризации.
+- `TfidfVectorizer` для векторизации текста.
+- `cosine_similarity` для вычисления косинусного сходства.
+- `re` - модуль для работы с регулярными выражениями.
 
-**_Fast and secure processing_** - Загружаемые данные обрабатываются с высокой скоростью благодаря оптимизированному бэкэнду на FastAPI. Процесс обработки полностью автоматизирован и обеспечивает сохранность данных.
+**Структура приложения**
 
-**_Simple and intuitive interface_** - Magic-XML предлагает простой в использовании веб-интерфейс, а также поддержку API для автоматизации задач, что делает приложение доступным для пользователей с различным уровнем знаний и опыта.
+- `FastAPI приложение`: Инициализация основного приложения с `FastAPI`, настройка путей для статических файлов и шаблонизатора `Jinja2`.
+- Класс `LinkData` (Pydantic модель): Модель для валидации входящих данных, получаемых через `POST-запрос` на `/process_link.`
+
+Функции обработки данных:
+
+- `get_category_replacement()`: Функция для категоризации на основе косинусного сходства между векторами.
+- `load_custom_categories()`: Загрузка пользовательских категорий из CSV-файла.
+- `remove_unwanted_tags()`: Очистка описаний товаров от HTML-тегов.
+- `process_link()`: Основная функция для обработки XML-ссылки, извлечения и сохранения данных в CSV-файл.
+
+Маршруты FastAPI:
+- `GET /:` Отображение главной страницы через Jinja2 шаблон.
+- `POST /process_link:` Принимает данные для обработки ссылки и генерирует CSV-файл.
+- `GET /download/data_files/{filename}:` Возможность скачивания сгенерированных CSV-файлов.
+
+**_Особенности_** - Автоматическая классификация и очистка данных. Magic-XML автоматически классифицирует информацию из XML по категориям и очищает текстовые данные от нежелательных тегов HTML, обеспечивая чистоту и читаемость конечного файла CSV.
+
+**_Удобство работы с кастомными категориями_** - Пользователи могут задать собственные категории для классификации данных, что делает приложение гибким и адаптируемым под специфические требования проекта.
+
+**_Быстрая и безопасная обработка_** - Загружаемые данные обрабатываются с высокой скоростью благодаря оптимизированному бэкэнду на FastAPI. Процесс обработки полностью автоматизирован и обеспечивает сохранность данных.
+
+**_Простой и интуитивный интерфейс_** - Magic-XML предлагает простой в использовании веб-интерфейс, а также поддержку API для автоматизации задач, что делает приложение доступным для пользователей с различным уровнем знаний и опыта.
 
 **_Технологический стек_**
 FastAPI: Эффективный и быстрый веб-фреймворк для создания API.
