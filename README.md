@@ -15,7 +15,7 @@
 **_Magic-XML_** — is a modern web application developed for the convenient and swift transformation of data from XML files into CSV format. The application leverages the power of FastAPI to ensure high performance in request processing, as well as utilizes machine learning algorithms and natural language processing for efficient analysis and classification of textual information. Magic-XML is ideally suited for data analysts, developers, and anyone who deals with large volumes of XML data and aims at their optimization and simplification of analysis.
 
 
-**Dependencies**
+**Dependencies:**
 - `fastapi` - A framework for building APIs with automatic documentation.
 - `uvicorn` - ASGI server for running FastAPI applications.
 - `requests` - Library for making HTTP requests.
@@ -31,25 +31,23 @@
 - `cosine_similarity` for calculating cosine similarity.
 - `re` - Module for working with regular expressions.
 
-**Application Structure**
-
+**Application Structure:**
 - `FastAPI Application`: Initializes the main application with FastAPI, configures the routes for static files and the `Jinja2 templating engine`.
 - `LinkData class (Pydantic model)`: A model for validating incoming data received through a `POST request to /process_link`.
 
 **Data processing functions:**
-
 - `Get_category_replacement()`: A function for categorization based on the cosine similarity between vectors.
 - `Load_custom_categories()`: Loading custom categories from a CSV file.
 - `Remove_unwanted_tags()`: Cleaning product descriptions of HTML tags.
 - `Process_link()`: The main function for processing an XML link, extracting, and saving data to a CSV file.
 
-**Маршруты FastAPI:**
-- `GET /:` Отображение главной страницы через Jinja2 шаблон.
-- `POST /process_link:` Принимает данные для обработки ссылки и генерирует CSV-файл.
-- `GET /download/data_files/{filename}:` Возможность скачивания сгенерированных CSV-файлов.
+**FastAPI Routes:**
+- `GET /`: Display the home page through a Jinja2 template.
+- `POST /process_link`: Accepts data for processing the link and generates a CSV file.
+- `GET /download/data_files/{filename}`: Ability to download generated CSV files.
 
-_**Адаптация категорий с помощью TF-IDF и косинусного сходства:**_ 
-Программа использует `TfidfVectorizer` и `косинусное сходство` для определения наиболее подходящей пользовательской категории товара на основе его оригинального названия категории, полученного из XML. Это демонстрирует интересный подход к задаче классификации или `маппинга категорий`, где вместо прямого сопоставления используются `методы машинного обучения` для повышения точности и гибкости процесса.
+_**Adapting Categories Using TF-IDF and Cosine Similarity:**_ 
+The program employs `TfidfVectorizer` and `cosine similarity` to determine the most suitable custom category for a product based on its original category name obtained from XML. This showcases an interesting approach to the classification or `category mapping` task, where `machine learning methods` are used instead of direct matching to enhance the accuracy and flexibility of the process.
 
 - TF (term frequency — частота слова) — отношение числа вхождений некоторого слова к общему числу слов документа
 
