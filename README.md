@@ -51,7 +51,7 @@ The program employs `TfidfVectorizer` and `cosine similarity` to determine the m
 
 **Cosine Similarity** is a metric used to determine how similar two entities are irrespective of their size. Mathematically, it measures the cosine of the angle between two vectors projected in a multi-dimensional space. This concept comes from the field of linear algebra and can be applied in various contexts such as data analysis, natural language processing (NLP), and information retrieval systems.
 
-<img src="https://github.com/Solrikk/MagicXML/assets/70236693/431ef94d-a58e-4446-bc15-bd35979d202e" width="65%" />
+<img src="https://github.com/Solrikk/MagicXML/assets/70236693/fa5cfff9-df91-4f9e-9868-82600dbf1ccd" width="65%" />
 
 The idea behind `cosine similarity` is quite simple. Imagine you have two vectors (arrays of numbers), each representing an entity's features in a multidimensional space. The "angle" between these vectors gives an indication of their similarity. If the angle is 0 degrees, it means the vectors are perfectly aligned, indicating a similarity score of 1, which is the maximum similarity. Conversely, if the angle is 90 degrees, the cosine similarity is 0, indicating no similarity. Angles between 0 and 90 degrees result in a similarity score somewhere between 0 and 1, with a smaller angle yielding a higher score.
 
