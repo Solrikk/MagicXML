@@ -57,7 +57,7 @@ The idea behind `cosine similarity` is quite simple. Imagine you have two vector
 
 <img src="https://storage.googleapis.com/lds-media/images/cosine-similarity-vectors.2e16d0ba.fill-800x160.jpg" width="55%" />
 
-- TF (term frequency — частота слова) — отношение числа вхождений некоторого слова к общему числу слов документа
+- TF (term frequency) is the ratio of the number of occurrences of a certain word to the total number of words in the document.
 
 <img src="https://wikimedia.org/api/rest_v1/media/math/render/svg/8ef207eb03f6e9b6f71e73739f45b5179b4f17cc" width="15%" />
 
@@ -84,10 +84,10 @@ Then, the program calculates the cosine similarity between the vector of the ori
 3. **Selecting the Most Suitable Category:**
 After calculating the cosine similarities, the custom category with the highest similarity value relative to the original category is selected. This means that this category is considered the most suitable or closest to the original category in terms of semantic content.
 
-Этот подход позволяет автоматически и с высокой степенью точности подбирать наиболее подходящие категории для продуктов из определенного набора пользовательских категорий, полагаясь на анализ содержания названий категорий, а не на строгое сопоставление. Это особенно полезно в случаях, когда требуется автоматическая классификация или категоризация больших объемов данных, и где прямое сопоставление может не покрывать все нюансы и вариации языка.
+This concept is particularly useful in text analysis for comparing documents or texts. By converting texts into vectors (using techniques such as TF-IDF), where each dimension represents a specific word and the value in that dimension represents the significance of the word, we can compare these vectors to find out how similar the texts are to each other. This is often used in search engines, plagiarism checkers, and recommendation systems to find or suggest content that is most similar to a given input.
 
-_**Асинхронная обработка запросов**_
-FastAPI основан на Starlette и позволяет обрабатывать запросы асинхронно, используя `async` и `await`. Это дает приложению возможность масштабироваться и обслуживать большое количество запросов эффективно, улучшая производительность на I/O операциях, таких как запросы к внешним API или операции чтения файлов. В данном приложении асинхронная обработка может быть особенно полезна при загрузке файлов через ендпоинт `/download/data_files/{filename},` где асинхронное чтение файла может значительно снизить время ожидания для клиента.
+_**Asynchronous Request Handling:**_
+FastAPI is built on top of Starlette and allows the handling of requests asynchronously using async and await keywords. This enables the application to scale and serve a large number of requests efficiently, improving performance on `I/O (Input/Output)` operations such as requests to external `APIs` or file read operations. In the application, asynchronous handling can be particularly useful in scenarios like loading files through an endpoint `/download/data_files/{filename}`, where asynchronous file reading can significantly reduce waiting time for the client.
 
 _*Обработка endpoint-ов с асинхронными функциями:*_
 
