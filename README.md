@@ -116,7 +116,8 @@ The application includes exception handling, such as a URL access error or a fil
 ## _Cloning the Repository: Clone the application code to your machine._
 - Installing dependencies: Install the necessary dependencies using `pip install -r requirements.txt.`
 - Running the server: Start the application with the command `uvicorn main:app --reload.`
+
 **Usage:**
-To process XML files, use the web interface or send a request to `/process_link` with the URL of your XML file. The resulting CSV file will be available for download via the provided link.
+- To process XML files, use the web interface or send a request to `/process_link` with the URL of your XML file. The resulting CSV file will be available for download via the provided link.
 
 ### Process your data in a simple and efficient way with Magic-XML!
