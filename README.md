@@ -101,11 +101,11 @@ Using spaCy and TfidfVectorizer from scikit-learn for text categorization demons
 
 <img src="https://github.com/Solrikk/MagicXML/blob/main/assets/SpaCy%20Dependency%20Visualization/SpaCy%20Dependency%20Visualization.jpeg" width="150%" />
 
-## _Обработка XML и генерация CSV_
-В приложении осуществляется парсинг XML-файлов для извлечения данных о товарах, что демонстрирует умение работать с различными форматами данных. После извлечения данных и их классификации происходит их сохранение в формате CSV, который является широко принятым стандартом для обмена табличными данными и может быть легко импортирован в различные системы и приложения для последующего анализа.
+## _XML Processing and CSV Generation_
+The application involves parsing XML files to extract product data, demonstrating the ability to work with various data formats. After extracting and classifying the data, it is saved in CSV format, which is a widely accepted standard for exchanging tabular data and can be easily imported into various systems and applications for further analysis.
 
-## _Техническая реализация веб-интерфейса_
-В приложении используется Jinja2Templates для генерации динамического HTML-контента. Это дает возможность создавать более интерактивный и пользовательско-ориентированный интерфейс. Вместе с монтированием статических файлов через StaticFiles, это создает полноценный веб-интерфейс для работы с приложением, не требуя от пользователя работы непосредственно с API или командной строкой.
+## _Technical Implementation of the Web Interface_
+The application uses Jinja2Templates for generating dynamic HTML content. This allows the creation of a more interactive and user-oriented interface. Together with serving static files through StaticFiles, it creates a full-fledged web interface for interacting with the application, eliminating the need for the user to work directly with the API or command line.
 
 ## _Валидация данных с Pydantic_
 Использование моделей Pydantic для валидации входящих данных позволяет не только обеспечить корректность данных, но и автоматически генерировать документацию к API. Это значительно упрощает как разработку, так и использование API, поскольку клиенты могут точно знать, какие данные и в каком формате ожидаются на входе.
