@@ -50,7 +50,7 @@
 The program employs `TfidfVectorizer` and `cosine similarity` to determine the most suitable custom category for a product based on its original category name obtained from XML. This showcases an interesting approach to the classification or `category mapping` task, where `machine learning methods` are used instead of direct matching to enhance the accuracy and flexibility of the process.
 
 [[created](https://github.com/Solrikk/MagicXML/tree/main/assets/TF-IDF%20Visualization)]
-<img src="https://github.com/Solrikk/MagicXML/assets/70236693/fa5cfff9-df91-4f9e-9868-82600dbf1ccd" width="95%" /> 
+<img src="https://github.com/Solrikk/MagicXML/blob/main/assets/TF-IDF%20Visualization/TF-IDF%20Visualization.png" width="95%" /> 
 
 **Cosine Similarity** is a metric used to determine how similar two entities are irrespective of their size. Mathematically, it measures the cosine of the angle between two vectors projected in a multi-dimensional space. This concept comes from the field of linear algebra and can be applied in various contexts such as data analysis, natural language processing (NLP), and information retrieval systems.
 
