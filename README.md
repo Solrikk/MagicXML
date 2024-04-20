@@ -85,6 +85,15 @@ tfidf_matrix = vectorizer.fit_transform(all_categories)
 
 ![image](https://scikit-learn.org/stable/_images/sphx_glr_plot_discretization_strategies_001.png)
 
+- Косинусное сходство между вектором описания товара и векторами пользовательских категорий вычисляется, чтобы определить, какая из пользовательских категорий наилучшим образом совпадает с данным товаром.
+
+```Python
+from sklearn.metrics.pairwise import cosine_similarity
+
+cosine_similarities = cosine_similarity(tfidf_matrix[0:1], tfidf_matrix[1:]).flatten()
+return custom_categories[cosine_similarities.argmax()]
+```
+
 **Техническая реализация веб-интерфейса**
 В приложении используется Jinja2Templates для генерации динамического HTML-контента. Это дает возможность создавать более интерактивный и пользовательско-ориентированный интерфейс. Вместе с монтированием статических файлов через StaticFiles, это создает полноценный веб-интерфейс для работы с приложением, не требуя от пользователя работы непосредственно с API или командной строкой.
 
