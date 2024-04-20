@@ -57,7 +57,7 @@ The program employs `TfidfVectorizer` and `cosine similarity` to determine the m
 The idea behind `cosine similarity` is quite simple. Imagine you have two vectors (arrays of numbers), each representing an entity's features in a multidimensional space. The "angle" between these vectors gives an indication of their similarity. If the angle is 0 degrees, it means the vectors are perfectly aligned, indicating a similarity score of 1, which is the maximum similarity. Conversely, if the angle is 90 degrees, the cosine similarity is 0, indicating no similarity. Angles between 0 and 90 degrees result in a similarity score somewhere between 0 and 1, with a smaller angle yielding a higher score.
 
 [[created](https://github.com/Solrikk/MagicXML/tree/main/assets/Visualization%20Cosine%20Similarity%20Matrix)]
-<img src="https://github.com/Solrikk/MagicXML/assets/70236693/2753570f-e069-496c-9a8e-5f54e3e5668a" width="100%" />
+<img src="https://github.com/Solrikk/MagicXML/blob/main/assets/Visualization%20Cosine%20Similarity%20Matrix/Visualization%20Cosine%20Similarity%20Matrix.png" width="100%" />
 
 - TF (term frequency) is the ratio of the number of occurrences of a certain word to the total number of words in the document.
 
