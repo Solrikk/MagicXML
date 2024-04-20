@@ -57,6 +57,18 @@ The program employs `TfidfVectorizer` and `cosine similarity` to determine the m
 
 <img src="https://wikimedia.org/api/rest_v1/media/math/render/svg/b88834044365dea6aedba224eabe7147d4d328ef" width="30%" />
 
+```Python
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
+
+def get_category_replacement(original_category_name, custom_categories):
+    vectorizer = TfidfVectorizer()
+    all_categories = [original_category_name] + custom_categories
+    tfidf_matrix = vectorizer.fit_transform(all_categories)
+    cosine_similarities = cosine_similarity(tfidf_matrix[0:1], tfidf_matrix[1:]).flatten()
+    return custom_categories[cosine_similarities.argmax()]
+```
+
 _Если документ содержит `100` слов, и слово «заяц» встречается в нём `3` раза, то частота слова (TF) для слова «заяц» в документе будет `0,03 (3/100)`. Вычислим IDF как десятичный логарифм отношения количества всех документов к количеству документов, содержащих слово «заяц». Таким образом, если «заяц» содержится в 1000 документах из `10 000 000` документов, то IDF будет равной: `log(10 000 000/1000) = 4`. Для расчета окончательного значения веса слова необходимо TF умножить на IDF. В данном примере, TF-IDF вес для слова «заяц» в выбранном документе будет равен: `0,03 × 4 = 0,12`._
 
 ### Пример работы в MagicXML:
