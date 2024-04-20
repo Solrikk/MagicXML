@@ -62,6 +62,29 @@ FastAPI основан на Starlette и позволяет обрабатыва
 **Кастомизация категоризации**
 Особенностями реализации является возможность кастомизации категорий через внешний CSV-файл. Это дает пользователю гибкость в управлении категориями товаров без изменения кода, что делает приложение более удобным и адаптивным под различные бизнес-задачи.
 
+- Пользовательские категории загружаются из CSV-файла с помощью функции `load_custom_categories(filename)`. Этот файл содержит перечень категорий, которые интересуют пользователя, и может быть легко обновлен или изменен без вмешательства в исходный код приложения.
+
+```Python
+def load_custom_categories(filename):
+  custom_categories = []
+  with open(filename, mode='r', encoding='utf-8') as file:
+    reader = csv.reader(file)
+    custom_categories = [row[0] for row in reader]
+  return custom_categories
+```
+
+- Для категоризации текста используется процедура векторизации, которая преобразует текст категории и тексты пользовательских категорий в числовые вектора при помощи TfidfVectorizer из scikit-learn. Это позволяет применить математические и аналитические методы для сравнения текстов.
+
+```Python
+from sklearn.feature_extraction.text import TfidfVectorizer
+
+vectorizer = TfidfVectorizer()
+all_categories = [original_category_name] + custom_categories
+tfidf_matrix = vectorizer.fit_transform(all_categories)
+```
+
+![image](https://scikit-learn.org/stable/_images/sphx_glr_plot_discretization_strategies_001.png)
+
 **Техническая реализация веб-интерфейса**
 В приложении используется Jinja2Templates для генерации динамического HTML-контента. Это дает возможность создавать более интерактивный и пользовательско-ориентированный интерфейс. Вместе с монтированием статических файлов через StaticFiles, это создает полноценный веб-интерфейс для работы с приложением, не требуя от пользователя работы непосредственно с API или командной строкой.
 
