@@ -46,7 +46,7 @@
 - `POST /process_link`: Accepts data for processing the link and generates a CSV file.
 - `GET /download/data_files/{filename}`: Ability to download generated CSV files.
 
-_**Adapting Categories Using TF-IDF and Cosine Similarity:**_ 
+## _Adapting Categories Using TF-IDF and Cosine Similarity:_ 
 The program employs `TfidfVectorizer` and `cosine similarity` to determine the most suitable custom category for a product based on its original category name obtained from XML. This showcases an interesting approach to the classification or `category mapping` task, where `machine learning methods` are used instead of direct matching to enhance the accuracy and flexibility of the process.
 
 [[created](https://github.com/Solrikk/MagicXML/tree/main/assets/TF-IDF%20Visualization)]
@@ -88,13 +88,13 @@ After calculating the cosine similarities, the custom category with the highest 
 
 This concept is particularly useful in text analysis for comparing documents or texts. By converting texts into vectors (using techniques such as TF-IDF), where each dimension represents a specific word and the value in that dimension represents the significance of the word, we can compare these vectors to find out how similar the texts are to each other. This is often used in search engines, plagiarism checkers, and recommendation systems to find or suggest content that is most similar to a given input.
 
-_**Asynchronous Request Handling:**_
+## _Asynchronous Request Handling:_
 FastAPI is built on top of Starlette and allows the handling of requests asynchronously using async and await keywords. This enables the application to scale and serve a large number of requests efficiently, improving performance on `I/O (Input/Output)` operations such as requests to external `APIs` or file read operations. In the application, asynchronous handling can be particularly useful in scenarios like loading files through an endpoint `/download/data_files/{filename}`, where asynchronous file reading can significantly reduce waiting time for the client.
 
-_*Обработка endpoint-ов с асинхронными функциями:*_
+**Handling endpoints with asynchronous functions:**
 
-- В коде определен асинхронный endpoint `process_link_post` через декоратор `@app.post("/process_link")`. Этот `endpoint` асинхронно обрабатывает `POST-запросы`, отправляя данные о ссылке (например, URL для обработки). Использование ключевого слова `async` перед определением функции указывает на то, что функция выполняется асинхронно.
-- Аналогично, асинхронный метод `download_csv` обрабатывает `GET-запросы` на скачивание файлов. Это также позволяет обрабатывать запросы на скачивание файлов, не блокируя основной поток выполнения приложения.
+- In the code, an asynchronous endpoint process_link_post is defined through the decorator `@app.post("/process_link")`. This endpoint asynchronously processes `POST requests` by sending link data (for example, a URL to process). Using the async keyword before the function definition indicates that the function will execute asynchronously.
+- Similarly, the asynchronous method download_csv handles `GET requests` for downloading files. This also allows for the handling of file download requests without blocking the main execution thread of the application.
 
 **Работа с текстом и естественным языком**
 Использование spaCy и TfidfVectorizer из scikit-learn для категоризации текста показывает, как можно эффективно применять инструменты машинного обучения в веб-приложениях. spaCy используется для предварительной обработки текста на русском языке, что важно для точной работы категоризации, ведь обработка текста включает в себя многие аспекты, такие как лемматизация и удаление стоп-слов, которые значительно влияют на итоговую точность. TfidfVectorizer преобразует текст в векторное представление, позволяя затем вычислить косинусное сходство между векторами, что используется для выбора наиболее подходящей категории для текста.
