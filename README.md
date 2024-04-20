@@ -4,7 +4,7 @@
 
 # Magic-XML ⚡️
 
-### _Magic-XML доступно на https://xmlmagic.ru_
+### _Magic-XML is available at https://xmlmagic.ru_
 
 ##
 
