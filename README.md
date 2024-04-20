@@ -12,24 +12,24 @@
   <h3> <a href="https://github.com/Solrikk/MagicXML/blob/main/README.md"> English | <a href="https://github.com/Solrikk/MagicXML/blob/main/README_RU.md">Русский</a> | <a href="https://github.com/Solrikk/MagicXML/blob/main/README_GE.md"> Deutsch </a> | <a href="https://github.com/Solrikk/MagicXML/blob/main/README_JP.md"> 日本語 </a> | <a href="README_KR.md">한국어</a> | <a href="README_CN.md">中文</a> </h3>
 </div>
 
-**_Magic-XML_** — это современное веб-приложение, разработанное для удобного и быстрого преобразования данных из XML файлов в формат CSV. Приложение использует мощь FastAPI для обеспечения высокой производительности обработки запросов, а также применяет алгоритмы машинного обучения и обработки естественного языка для эффективного анализа и классификации текстовой информации. Magic-XML идеально подходит для аналитиков данных, разработчиков и всех, кто работает с большим объемом данных в формате XML и стремится к их оптимизации и упрощению анализа.
+**_Magic-XML_** — is a modern web application developed for the convenient and swift transformation of data from XML files into CSV format. The application leverages the power of FastAPI to ensure high performance in request processing, as well as utilizes machine learning algorithms and natural language processing for efficient analysis and classification of textual information. Magic-XML is ideally suited for data analysts, developers, and anyone who deals with large volumes of XML data and aims at their optimization and simplification of analysis.
 
 
-**Зависимости**
-- `fastapi` - фреймворк для создания API с автоматической документацией.
-- `uvicorn` - ASGI-сервер для запуска FastAPI приложения.
-- `requests` - библиотека для выполнения HTTP-запросов.
-- `xml.etree.ElementTree` - модуль для обработки XML.
-- `csv` - модуль для работы с CSV-файлами.
-- `os` - модуль для работы с операционной системой, нужен для создания директории.
-- `Jinja2Templates` из инструмент для работы с шаблонами Jinja2.
-- `StaticFiles` - для обслуживания статических файлов.
-- `BaseModel` из `pydantic` - для валидации данных.
-- `FileResponse` для отправки файлов в ответах.
-- `spacy` - для обработки естественного языка, используется для категоризации.
-- `TfidfVectorizer` для векторизации текста.
-- `cosine_similarity` для вычисления косинусного сходства.
-- `re` - модуль для работы с регулярными выражениями.
+**Dependencies**
+- `fastapi` - A framework for building APIs with automatic documentation.
+- `uvicorn` - ASGI server for running FastAPI applications.
+- `requests` - Library for making HTTP requests.
+- `xml.etree.ElementTree` - Module for XML processing.
+- `csv` - Module for working with CSV files.
+- `os` - Module for interacting with the operating system, used for creating directories.
+- `Jinja2Templates` from FastAPI for working with Jinja2 templates.
+- `StaticFiles` - For serving static files.
+- `BaseModel` from `pydantic` - For data validation.
+- `FileResponse` for sending files in responses.
+- `spacy` - For natural language processing, used for categorization.
+- `TfidfVectorizer` for text vectorization.
+- `cosine_similarity` for calculating cosine similarity.
+- `re` - Module for working with regular expressions.
 
 **Структура приложения**
 
