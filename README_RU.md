@@ -2,7 +2,7 @@
   <img src="assets/working.png" width="30%"/>
 </div>
 
-# Magic-XML ⚡️
+# Magic-XML ✨
 
 **_Magic-XML is available at https://xmlmagic.ru_**
 
@@ -46,18 +46,18 @@
 - `POST /process_link`: Accepts data for processing the link and generates a CSV file.
 - `GET /download/data_files/{filename}`: Ability to download generated CSV files.
 
-_**Adapting Categories Using TF-IDF and Cosine Similarity:**_ 
+## _Adapting Categories Using TF-IDF and Cosine Similarity:_ 
 The program employs `TfidfVectorizer` and `cosine similarity` to determine the most suitable custom category for a product based on its original category name obtained from XML. This showcases an interesting approach to the classification or `category mapping` task, where `machine learning methods` are used instead of direct matching to enhance the accuracy and flexibility of the process.
 
 [[created](https://github.com/Solrikk/MagicXML/tree/main/assets/TF-IDF%20Visualization)]
-<img src="https://github.com/Solrikk/MagicXML/assets/70236693/fa5cfff9-df91-4f9e-9868-82600dbf1ccd" width="95%" /> 
+<img src="https://github.com/Solrikk/MagicXML/blob/main/assets/TF-IDF%20Visualization/TF-IDF%20Visualization.png" width="95%" /> 
 
 **Cosine Similarity** is a metric used to determine how similar two entities are irrespective of their size. Mathematically, it measures the cosine of the angle between two vectors projected in a multi-dimensional space. This concept comes from the field of linear algebra and can be applied in various contexts such as data analysis, natural language processing (NLP), and information retrieval systems.
 
 The idea behind `cosine similarity` is quite simple. Imagine you have two vectors (arrays of numbers), each representing an entity's features in a multidimensional space. The "angle" between these vectors gives an indication of their similarity. If the angle is 0 degrees, it means the vectors are perfectly aligned, indicating a similarity score of 1, which is the maximum similarity. Conversely, if the angle is 90 degrees, the cosine similarity is 0, indicating no similarity. Angles between 0 and 90 degrees result in a similarity score somewhere between 0 and 1, with a smaller angle yielding a higher score.
 
 [[created](https://github.com/Solrikk/MagicXML/tree/main/assets/Visualization%20Cosine%20Similarity%20Matrix)]
-<img src="https://github.com/Solrikk/MagicXML/assets/70236693/2753570f-e069-496c-9a8e-5f54e3e5668a" width="100%" />
+<img src="https://github.com/Solrikk/MagicXML/blob/main/assets/Visualization%20Cosine%20Similarity%20Matrix/Visualization%20Cosine%20Similarity%20Matrix.png" width="100%" />
 
 - TF (term frequency) is the ratio of the number of occurrences of a certain word to the total number of words in the document.
 
@@ -88,35 +88,36 @@ After calculating the cosine similarities, the custom category with the highest 
 
 This concept is particularly useful in text analysis for comparing documents or texts. By converting texts into vectors (using techniques such as TF-IDF), where each dimension represents a specific word and the value in that dimension represents the significance of the word, we can compare these vectors to find out how similar the texts are to each other. This is often used in search engines, plagiarism checkers, and recommendation systems to find or suggest content that is most similar to a given input.
 
-_**Asynchronous Request Handling:**_
+## _Asynchronous Request Handling:_
 FastAPI is built on top of Starlette and allows the handling of requests asynchronously using async and await keywords. This enables the application to scale and serve a large number of requests efficiently, improving performance on `I/O (Input/Output)` operations such as requests to external `APIs` or file read operations. In the application, asynchronous handling can be particularly useful in scenarios like loading files through an endpoint `/download/data_files/{filename}`, where asynchronous file reading can significantly reduce waiting time for the client.
 
-_*Обработка endpoint-ов с асинхронными функциями:*_
+## _Handling endpoints with asynchronous functions:_
 
-- В коде определен асинхронный endpoint `process_link_post` через декоратор `@app.post("/process_link")`. Этот `endpoint` асинхронно обрабатывает `POST-запросы`, отправляя данные о ссылке (например, URL для обработки). Использование ключевого слова `async` перед определением функции указывает на то, что функция выполняется асинхронно.
-- Аналогично, асинхронный метод `download_csv` обрабатывает `GET-запросы` на скачивание файлов. Это также позволяет обрабатывать запросы на скачивание файлов, не блокируя основной поток выполнения приложения.
+- In the code, an asynchronous endpoint process_link_post is defined through the decorator `@app.post("/process_link")`. This endpoint asynchronously processes `POST requests` by sending link data (for example, a URL to process). Using the async keyword before the function definition indicates that the function will execute asynchronously.
+- Similarly, the asynchronous method download_csv handles `GET requests` for downloading files. This also allows for the handling of file download requests without blocking the main execution thread of the application.
 
-**Работа с текстом и естественным языком**
-Использование spaCy и TfidfVectorizer из scikit-learn для категоризации текста показывает, как можно эффективно применять инструменты машинного обучения в веб-приложениях. spaCy используется для предварительной обработки текста на русском языке, что важно для точной работы категоризации, ведь обработка текста включает в себя многие аспекты, такие как лемматизация и удаление стоп-слов, которые значительно влияют на итоговую точность. TfidfVectorizer преобразует текст в векторное представление, позволяя затем вычислить косинусное сходство между векторами, что используется для выбора наиболее подходящей категории для текста.
+## _Working with Text and Natural Language_
+Using spaCy and TfidfVectorizer from scikit-learn for text categorization demonstrates how machine learning tools can be effectively applied in web applications. spaCy is used for preprocessing text in Russian, which is important for the accurate operation of categorization, as text processing includes many aspects, such as lemmatization and stop-word removal, which significantly affect the final accuracy. TfidfVectorizer converts text into a vector representation, allowing then to calculate the cosine similarity between vectors, which is used to select the most suitable category for the text.
 
-<img src="https://habrastorage.org/getpro/habr/post_images/bcd/fff/e5c/bcdfffe5c0b9f221a2f6607f96ca0e4a.svg" width="80%" />
+<img src="https://github.com/Solrikk/MagicXML/blob/main/assets/SpaCy%20Dependency%20Visualization/SpaCy%20Dependency%20Visualization.jpeg" width="150%" />
 
-**Обработка XML и генерация CSV**
-В приложении осуществляется парсинг XML-файлов для извлечения данных о товарах, что демонстрирует умение работать с различными форматами данных. После извлечения данных и их классификации происходит их сохранение в формате CSV, который является широко принятым стандартом для обмена табличными данными и может быть легко импортирован в различные системы и приложения для последующего анализа.
+## _XML Processing and CSV Generation_
+The application involves parsing XML files to extract product data, demonstrating the ability to work with various data formats. After extracting and classifying the data, it is saved in CSV format, which is a widely accepted standard for exchanging tabular data and can be easily imported into various systems and applications for further analysis.
 
-**Техническая реализация веб-интерфейса**
-В приложении используется Jinja2Templates для генерации динамического HTML-контента. Это дает возможность создавать более интерактивный и пользовательско-ориентированный интерфейс. Вместе с монтированием статических файлов через StaticFiles, это создает полноценный веб-интерфейс для работы с приложением, не требуя от пользователя работы непосредственно с API или командной строкой.
+## _Technical Implementation of the Web Interface_
+The application uses Jinja2Templates for generating dynamic HTML content. This allows the creation of a more interactive and user-oriented interface. Together with serving static files through StaticFiles, it creates a full-fledged web interface for interacting with the application, eliminating the need for the user to work directly with the API or command line.
 
-**Валидация данных с Pydantic**
-Использование моделей Pydantic для валидации входящих данных позволяет не только обеспечить корректность данных, но и автоматически генерировать документацию к API. Это значительно упрощает как разработку, так и использование API, поскольку клиенты могут точно знать, какие данные и в каком формате ожидаются на входе.
+## _Data Validation with Pydantic_
+Using Pydantic models for validating incoming data not only ensures the correctness of the data but also allows for the automatic generation of API documentation. This significantly simplifies both the development and the use of the API, as clients can precisely know what data and in what format are expected on input.
 
-**Обработка ошибок и исключений**
-В приложении предусмотрена обработка исключений, таких как ошибка доступа к URL или ошибка чтения файла. Это обеспечивает стабильность работы приложения и информативное сообщение пользователю о возникшей проблеме через механизмы HTTP-исключений FastAPI.
+## _Error and Exception Handling_
+The application includes exception handling, such as a URL access error or a file reading error. This ensures the application's stability and provides informative feedback to the user about the issue through FastAPI's HTTP exception mechanisms.
 
-**Клонирование репозитория: Склонируйте код приложения на вашу машину.**
-- Установка зависимостей: Установите необходимые зависимости с помощью pip install -r requirements.txt.
-- Запуск сервера: Запустите приложение командой uvicorn main:app --reload.
-**Использование**
-Для обработки XML файлов используйте веб-интерфейс или отправьте запрос на /process_link с URL вашего XML файла. Полученный CSV файл будет доступен для загрузки через предоставленную ссылку.
+## _Cloning the Repository: Clone the application code to your machine._
+- Installing dependencies: Install the necessary dependencies using `pip install -r requirements.txt.`
+- Running the server: Start the application with the command `uvicorn main:app --reload.`
 
-Обабатывайт ваши данные простым и эффективным способом с Magic-XML!
+**Usage:**
+- To process XML files, use the web interface or send a request to `/process_link` with the URL of your XML file. The resulting CSV file will be available for download via the provided link.
+
+### Process your data in a simple and efficient way with Magic-XML!
