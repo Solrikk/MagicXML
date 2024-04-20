@@ -107,16 +107,16 @@ The application involves parsing XML files to extract product data, demonstratin
 ## _Technical Implementation of the Web Interface_
 The application uses Jinja2Templates for generating dynamic HTML content. This allows the creation of a more interactive and user-oriented interface. Together with serving static files through StaticFiles, it creates a full-fledged web interface for interacting with the application, eliminating the need for the user to work directly with the API or command line.
 
-## _Валидация данных с Pydantic_
-Использование моделей Pydantic для валидации входящих данных позволяет не только обеспечить корректность данных, но и автоматически генерировать документацию к API. Это значительно упрощает как разработку, так и использование API, поскольку клиенты могут точно знать, какие данные и в каком формате ожидаются на входе.
+## _Data Validation with Pydantic_
+Using Pydantic models for validating incoming data not only ensures the correctness of the data but also allows for the automatic generation of API documentation. This significantly simplifies both the development and the use of the API, as clients can precisely know what data and in what format are expected on input.
 
-## _Обработка ошибок и исключений_
-В приложении предусмотрена обработка исключений, таких как ошибка доступа к URL или ошибка чтения файла. Это обеспечивает стабильность работы приложения и информативное сообщение пользователю о возникшей проблеме через механизмы HTTP-исключений FastAPI.
+## _Error and Exception Handling_
+The application includes exception handling, such as a URL access error or a file reading error. This ensures the application's stability and provides informative feedback to the user about the issue through FastAPI's HTTP exception mechanisms.
 
-**Клонирование репозитория: Склонируйте код приложения на вашу машину.**
-- Установка зависимостей: Установите необходимые зависимости с помощью pip install -r requirements.txt.
-- Запуск сервера: Запустите приложение командой uvicorn main:app --reload.
-**Использование**
-Для обработки XML файлов используйте веб-интерфейс или отправьте запрос на /process_link с URL вашего XML файла. Полученный CSV файл будет доступен для загрузки через предоставленную ссылку.
+## _Cloning the Repository: Clone the application code to your machine._
+- Installing dependencies: Install the necessary dependencies using `pip install -r requirements.txt.`
+- Running the server: Start the application with the command `uvicorn main:app --reload.`
+**Usage:**
+To process XML files, use the web interface or send a request to `/process_link` with the URL of your XML file. The resulting CSV file will be available for download via the provided link.
 
-Обабатывайт ваши данные простым и эффективным способом с Magic-XML!
+### Process your data in a simple and efficient way with Magic-XML!
