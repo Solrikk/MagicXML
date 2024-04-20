@@ -31,17 +31,17 @@
 - `cosine_similarity` for calculating cosine similarity.
 - `re` - Module for working with regular expressions.
 
-**Структура приложения**
+**Application Structure**
 
-- `FastAPI приложение`: Инициализация основного приложения с `FastAPI`, настройка путей для статических файлов и шаблонизатора `Jinja2`.
-- Класс `LinkData` (Pydantic модель): Модель для валидации входящих данных, получаемых через `POST-запрос` на `/process_link.`
+- `FastAPI Application`: Initializes the main application with FastAPI, configures the routes for static files and the `Jinja2 templating engine`.
+- `LinkData class (Pydantic model)`: A model for validating incoming data received through a `POST request to /process_link`.
 
-**Функции обработки данных:**
+**Data processing functions:**
 
-- `get_category_replacement()`: Функция для категоризации на основе косинусного сходства между векторами.
-- `load_custom_categories()`: Загрузка пользовательских категорий из CSV-файла.
-- `remove_unwanted_tags()`: Очистка описаний товаров от HTML-тегов.
-- `process_link()`: Основная функция для обработки XML-ссылки, извлечения и сохранения данных в CSV-файл.
+- `Get_category_replacement()`: A function for categorization based on the cosine similarity between vectors.
+- `Load_custom_categories()`: Loading custom categories from a CSV file.
+- `Remove_unwanted_tags()`: Cleaning product descriptions of HTML tags.
+- `Process_link()`: The main function for processing an XML link, extracting, and saving data to a CSV file.
 
 **Маршруты FastAPI:**
 - `GET /:` Отображение главной страницы через Jinja2 шаблон.
