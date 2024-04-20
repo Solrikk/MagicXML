@@ -69,12 +69,12 @@ def get_category_replacement(original_category_name, custom_categories):
     return custom_categories[cosine_similarities.argmax()]
 ```
 
-1. **Векторизация категорий:**
-Используя TF-IDF, программа преобразует названия категорий (одно из оригинальных названий и список пользовательских категорий) в векторное представление. Это означает, что каждая категория становится вектором в многомерном пространстве, где каждое измерение представляет слово из корпуса категорий, а значение — это важность слова в контексте категории.
-2. **Нахождение косинусного сходства:**
-Затем программа вычисляет косинусное сходство между вектором оригинальной категории и векторами каждой из пользовательских категорий. Это сравнивает, насколько близко пользовательские категории находятся к оригинальной категории в терминах их контекстного сходства.
-3. **Выбор наиболее подходящей категории:**
-После вычисления косинусных сходств выбирается пользовательская категория с наибольшим значением сходства по отношению к оригинальной категории. Это означает, что эта категория считается наиболее подходящей или близкой к оригинальной категории с точки зрения семантического содержания.
+1. **Category Vectorization:**
+Using TF-IDF, the program transforms the names of the categories (one of the original names and a list of custom categories) into a vector representation. This means that each category becomes a vector in a multidimensional space, where each dimension represents a word from the category corpus, and the value represents the importance of the word in the context of the category.
+2. **Finding Cosine Similarity:**
+Then, the program calculates the cosine similarity between the vector of the original category and the vectors of each custom category. This compares how close the custom categories are to the original category in terms of their contextual similarity.
+3. **Selecting the Most Suitable Category:**
+After calculating the cosine similarities, the custom category with the highest similarity value relative to the original category is selected. This means that this category is considered the most suitable or closest to the original category in terms of semantic content.
 
 Этот подход позволяет автоматически и с высокой степенью точности подбирать наиболее подходящие категории для продуктов из определенного набора пользовательских категорий, полагаясь на анализ содержания названий категорий, а не на строгое сопоставление. Это особенно полезно в случаях, когда требуется автоматическая классификация или категоризация больших объемов данных, и где прямое сопоставление может не покрывать все нюансы и вариации языка.
 
