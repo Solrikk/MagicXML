@@ -2,7 +2,7 @@
   <img src="assets/working.png" width="30%"/>
 </div>
 
-# Magic-XML ⚡️
+# Magic-XML ✨
 
 **_Magic-XML is available at https://xmlmagic.ru_**
 
