@@ -4,7 +4,7 @@
 
 # Magic-XML ⚡️
 
-### _Magic-XML доступно на https://xmlmagic.ru_
+**_Magic-XML is available at https://xmlmagic.ru_**
 
 ##
 
@@ -12,68 +12,84 @@
   <h3> <a href="https://github.com/Solrikk/MagicXML/blob/main/README.md"> English | <a href="https://github.com/Solrikk/MagicXML/blob/main/README_RU.md">Русский</a> | <a href="https://github.com/Solrikk/MagicXML/blob/main/README_GE.md"> Deutsch </a> | <a href="https://github.com/Solrikk/MagicXML/blob/main/README_JP.md"> 日本語 </a> | <a href="README_KR.md">한국어</a> | <a href="README_CN.md">中文</a> </h3>
 </div>
 
-**_Magic-XML_** — это современное веб-приложение, разработанное для удобного и быстрого преобразования данных из XML файлов в формат CSV. Приложение использует мощь FastAPI для обеспечения высокой производительности обработки запросов, а также применяет алгоритмы машинного обучения и обработки естественного языка для эффективного анализа и классификации текстовой информации. Magic-XML идеально подходит для аналитиков данных, разработчиков и всех, кто работает с большим объемом данных в формате XML и стремится к их оптимизации и упрощению анализа.
+**_Magic-XML_** — is a modern web application developed for the convenient and swift transformation of data from XML files into CSV format. The application leverages the power of FastAPI to ensure high performance in request processing, as well as utilizes machine learning algorithms and natural language processing for efficient analysis and classification of textual information. Magic-XML is ideally suited for data analysts, developers, and anyone who deals with large volumes of XML data and aims at their optimization and simplification of analysis.
 
 
-**Зависимости**
-- `fastapi` - фреймворк для создания API с автоматической документацией.
-- `uvicorn` - ASGI-сервер для запуска FastAPI приложения.
-- `requests` - библиотека для выполнения HTTP-запросов.
-- `xml.etree.ElementTree` - модуль для обработки XML.
-- `csv` - модуль для работы с CSV-файлами.
-- `os` - модуль для работы с операционной системой, нужен для создания директории.
-- `Jinja2Templates` из инструмент для работы с шаблонами Jinja2.
-- `StaticFiles` - для обслуживания статических файлов.
-- `BaseModel` из `pydantic` - для валидации данных.
-- `FileResponse` для отправки файлов в ответах.
-- `spacy` - для обработки естественного языка, используется для категоризации.
-- `TfidfVectorizer` для векторизации текста.
-- `cosine_similarity` для вычисления косинусного сходства.
-- `re` - модуль для работы с регулярными выражениями.
+**Dependencies:**
+- `fastapi` - A framework for building APIs with automatic documentation.
+- `uvicorn` - ASGI server for running FastAPI applications.
+- `requests` - Library for making HTTP requests.
+- `xml.etree.ElementTree` - Module for XML processing.
+- `csv` - Module for working with CSV files.
+- `os` - Module for interacting with the operating system, used for creating directories.
+- `Jinja2Templates` from FastAPI for working with Jinja2 templates.
+- `StaticFiles` - For serving static files.
+- `BaseModel` from `pydantic` - For data validation.
+- `FileResponse` for sending files in responses.
+- `spacy` - For natural language processing, used for categorization.
+- `TfidfVectorizer` for text vectorization.
+- `cosine_similarity` for calculating cosine similarity.
+- `re` - Module for working with regular expressions.
 
-**Структура приложения**
+**Application Structure:**
+- `FastAPI Application`: Initializes the main application with FastAPI, configures the routes for static files and the `Jinja2 templating engine`.
+- `LinkData class (Pydantic model)`: A model for validating incoming data received through a `POST request to /process_link`.
 
-- `FastAPI приложение`: Инициализация основного приложения с `FastAPI`, настройка путей для статических файлов и шаблонизатора `Jinja2`.
-- Класс `LinkData` (Pydantic модель): Модель для валидации входящих данных, получаемых через `POST-запрос` на `/process_link.`
+**Data processing functions:**
+- `Get_category_replacement()`: A function for categorization based on the cosine similarity between vectors.
+- `Load_custom_categories()`: Loading custom categories from a CSV file.
+- `Remove_unwanted_tags()`: Cleaning product descriptions of HTML tags.
+- `Process_link()`: The main function for processing an XML link, extracting, and saving data to a CSV file.
 
-**Функции обработки данных:**
+**FastAPI Routes:**
+- `GET /`: Display the home page through a Jinja2 template.
+- `POST /process_link`: Accepts data for processing the link and generates a CSV file.
+- `GET /download/data_files/{filename}`: Ability to download generated CSV files.
 
-- `get_category_replacement()`: Функция для категоризации на основе косинусного сходства между векторами.
-- `load_custom_categories()`: Загрузка пользовательских категорий из CSV-файла.
-- `remove_unwanted_tags()`: Очистка описаний товаров от HTML-тегов.
-- `process_link()`: Основная функция для обработки XML-ссылки, извлечения и сохранения данных в CSV-файл.
+_**Adapting Categories Using TF-IDF and Cosine Similarity:**_ 
+The program employs `TfidfVectorizer` and `cosine similarity` to determine the most suitable custom category for a product based on its original category name obtained from XML. This showcases an interesting approach to the classification or `category mapping` task, where `machine learning methods` are used instead of direct matching to enhance the accuracy and flexibility of the process.
 
-**Маршруты FastAPI:**
-- `GET /:` Отображение главной страницы через Jinja2 шаблон.
-- `POST /process_link:` Принимает данные для обработки ссылки и генерирует CSV-файл.
-- `GET /download/data_files/{filename}:` Возможность скачивания сгенерированных CSV-файлов.
+[[created](https://github.com/Solrikk/MagicXML/tree/main/assets/TF-IDF%20Visualization)]
+<img src="https://github.com/Solrikk/MagicXML/assets/70236693/fa5cfff9-df91-4f9e-9868-82600dbf1ccd" width="95%" /> 
 
-_**Адаптация категорий с помощью TF-IDF и косинусного сходства:**_ 
-Программа использует `TfidfVectorizer` и `косинусное сходство` для определения наиболее подходящей пользовательской категории товара на основе его оригинального названия категории, полученного из XML. Это демонстрирует интересный подход к задаче классификации или `маппинга категорий`, где вместо прямого сопоставления используются `методы машинного обучения` для повышения точности и гибкости процесса.
+**Cosine Similarity** is a metric used to determine how similar two entities are irrespective of their size. Mathematically, it measures the cosine of the angle between two vectors projected in a multi-dimensional space. This concept comes from the field of linear algebra and can be applied in various contexts such as data analysis, natural language processing (NLP), and information retrieval systems.
 
-- TF (term frequency — частота слова) — отношение числа вхождений некоторого слова к общему числу слов документа
+The idea behind `cosine similarity` is quite simple. Imagine you have two vectors (arrays of numbers), each representing an entity's features in a multidimensional space. The "angle" between these vectors gives an indication of their similarity. If the angle is 0 degrees, it means the vectors are perfectly aligned, indicating a similarity score of 1, which is the maximum similarity. Conversely, if the angle is 90 degrees, the cosine similarity is 0, indicating no similarity. Angles between 0 and 90 degrees result in a similarity score somewhere between 0 and 1, with a smaller angle yielding a higher score.
+
+[[created](https://github.com/Solrikk/MagicXML/tree/main/assets/Visualization%20Cosine%20Similarity%20Matrix)]
+<img src="https://github.com/Solrikk/MagicXML/assets/70236693/2753570f-e069-496c-9a8e-5f54e3e5668a" width="100%" />
+
+- TF (term frequency) is the ratio of the number of occurrences of a certain word to the total number of words in the document.
 
 <img src="https://wikimedia.org/api/rest_v1/media/math/render/svg/8ef207eb03f6e9b6f71e73739f45b5179b4f17cc" width="15%" />
 
-- DF (inverse document frequency — обратная частота документа) — инверсия частоты, с которой некоторое слово встречается в документах коллекции. Основоположником данной концепции является Карен Спарк Джонс[1]. Учёт IDF уменьшает вес широкоупотребительных слов. Для каждого уникального слова в пределах конкретной коллекции документов существует только одно значение IDF.
+- IDF (Inverse Document Frequency) - the inversion of the frequency with which a certain word appears in the documents of a collection. Karen Spärck Jones is the founder of this concept. Taking into account IDF reduces the weight of commonly used words. For each unique word within a specific collection of documents, there is only one IDF value.
 
 <img src="https://wikimedia.org/api/rest_v1/media/math/render/svg/b88834044365dea6aedba224eabe7147d4d328ef" width="30%" />
 
-_Если документ содержит `100` слов, и слово «заяц» встречается в нём `3` раза, то частота слова (TF) для слова «заяц» в документе будет `0,03 (3/100)`. Вычислим IDF как десятичный логарифм отношения количества всех документов к количеству документов, содержащих слово «заяц». Таким образом, если «заяц» содержится в 1000 документах из `10 000 000` документов, то IDF будет равной: `log(10 000 000/1000) = 4`. Для расчета окончательного значения веса слова необходимо TF умножить на IDF. В данном примере, TF-IDF вес для слова «заяц» в выбранном документе будет равен: `0,03 × 4 = 0,12`._
+```Python
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
 
-### Пример работы в MagicXML:
+def get_category_replacement(original_category_name, custom_categories):
+    vectorizer = TfidfVectorizer()
+    all_categories = [original_category_name] + custom_categories
+    tfidf_matrix = vectorizer.fit_transform(all_categories)
+    cosine_similarities = cosine_similarity(tfidf_matrix[0:1], tfidf_matrix[1:]).flatten()
+    return custom_categories[cosine_similarities.argmax()]
+```
 
-1. **Векторизация категорий:**
-Используя TF-IDF, программа преобразует названия категорий (одно из оригинальных названий и список пользовательских категорий) в векторное представление. Это означает, что каждая категория становится вектором в многомерном пространстве, где каждое измерение представляет слово из корпуса категорий, а значение — это важность слова в контексте категории.
-2. **Нахождение косинусного сходства:**
-Затем программа вычисляет косинусное сходство между вектором оригинальной категории и векторами каждой из пользовательских категорий. Это сравнивает, насколько близко пользовательские категории находятся к оригинальной категории в терминах их контекстного сходства.
-3. **Выбор наиболее подходящей категории:**
-После вычисления косинусных сходств выбирается пользовательская категория с наибольшим значением сходства по отношению к оригинальной категории. Это означает, что эта категория считается наиболее подходящей или близкой к оригинальной категории с точки зрения семантического содержания.
+1. **Category Vectorization:**
+Using TF-IDF, the program transforms the names of the categories (one of the original names and a list of custom categories) into a vector representation. This means that each category becomes a vector in a multidimensional space, where each dimension represents a word from the category corpus, and the value represents the importance of the word in the context of the category.
+2. **Finding Cosine Similarity:**
+Then, the program calculates the cosine similarity between the vector of the original category and the vectors of each custom category. This compares how close the custom categories are to the original category in terms of their contextual similarity.
+3. **Selecting the Most Suitable Category:**
+After calculating the cosine similarities, the custom category with the highest similarity value relative to the original category is selected. This means that this category is considered the most suitable or closest to the original category in terms of semantic content.
 
-Этот подход позволяет автоматически и с высокой степенью точности подбирать наиболее подходящие категории для продуктов из определенного набора пользовательских категорий, полагаясь на анализ содержания названий категорий, а не на строгое сопоставление. Это особенно полезно в случаях, когда требуется автоматическая классификация или категоризация больших объемов данных, и где прямое сопоставление может не покрывать все нюансы и вариации языка.
+This concept is particularly useful in text analysis for comparing documents or texts. By converting texts into vectors (using techniques such as TF-IDF), where each dimension represents a specific word and the value in that dimension represents the significance of the word, we can compare these vectors to find out how similar the texts are to each other. This is often used in search engines, plagiarism checkers, and recommendation systems to find or suggest content that is most similar to a given input.
 
-_**Асинхронная обработка запросов**_
-FastAPI основан на Starlette и позволяет обрабатывать запросы асинхронно, используя `async` и `await`. Это дает приложению возможность масштабироваться и обслуживать большое количество запросов эффективно, улучшая производительность на I/O операциях, таких как запросы к внешним API или операции чтения файлов. В данном приложении асинхронная обработка может быть особенно полезна при загрузке файлов через ендпоинт `/download/data_files/{filename},` где асинхронное чтение файла может значительно снизить время ожидания для клиента.
+_**Asynchronous Request Handling:**_
+FastAPI is built on top of Starlette and allows the handling of requests asynchronously using async and await keywords. This enables the application to scale and serve a large number of requests efficiently, improving performance on `I/O (Input/Output)` operations such as requests to external `APIs` or file read operations. In the application, asynchronous handling can be particularly useful in scenarios like loading files through an endpoint `/download/data_files/{filename}`, where asynchronous file reading can significantly reduce waiting time for the client.
 
 _*Обработка endpoint-ов с асинхронными функциями:*_
 
@@ -87,43 +103,6 @@ _*Обработка endpoint-ов с асинхронными функциям�
 
 **Обработка XML и генерация CSV**
 В приложении осуществляется парсинг XML-файлов для извлечения данных о товарах, что демонстрирует умение работать с различными форматами данных. После извлечения данных и их классификации происходит их сохранение в формате CSV, который является широко принятым стандартом для обмена табличными данными и может быть легко импортирован в различные системы и приложения для последующего анализа.
-
-**Кастомизация категоризации**
-Особенностями реализации является возможность кастомизации категорий через внешний CSV-файл. Это дает пользователю гибкость в управлении категориями товаров без изменения кода, что делает приложение более удобным и адаптивным под различные бизнес-задачи.
-
-- Пользовательские категории загружаются из CSV-файла с помощью функции `load_custom_categories(filename)`. Этот файл содержит перечень категорий, которые интересуют пользователя, и может быть легко обновлен или изменен без вмешательства в исходный код приложения.
-
-```Python
-def load_custom_categories(filename):
-  custom_categories = []
-  with open(filename, mode='r', encoding='utf-8') as file:
-    reader = csv.reader(file)
-    custom_categories = [row[0] for row in reader]
-  return custom_categories
-```
-
-- Для категоризации текста используется процедура векторизации, которая преобразует текст категории и тексты пользовательских категорий в числовые вектора при помощи TfidfVectorizer из scikit-learn. Это позволяет применить математические и аналитические методы для сравнения текстов.
-
-```Python
-from sklearn.feature_extraction.text import TfidfVectorizer
-
-vectorizer = TfidfVectorizer()
-all_categories = [original_category_name] + custom_categories
-tfidf_matrix = vectorizer.fit_transform(all_categories)
-```
-
-<img src="https://scikit-learn.org/stable/_images/sphx_glr_plot_discretization_strategies_001.png" width="80%" />
-
-- Косинусное сходство между вектором описания товара и векторами пользовательских категорий вычисляется, чтобы определить, какая из пользовательских категорий наилучшим образом совпадает с данным товаром.
-
-```Python
-from sklearn.metrics.pairwise import cosine_similarity
-
-cosine_similarities = cosine_similarity(tfidf_matrix[0:1], tfidf_matrix[1:]).flatten()
-return custom_categories[cosine_similarities.argmax()]
-```
-
-- На основе полученных значений косинусного сходства приложение автоматически выбирает для каждого товара наиболее подходящую пользовательскую категорию, что значительно упрощает дальнейшую работу с данными, позволяя пользователям группировать товары по заранее определенным категориям.
 
 **Техническая реализация веб-интерфейса**
 В приложении используется Jinja2Templates для генерации динамического HTML-контента. Это дает возможность создавать более интерактивный и пользовательско-ориентированный интерфейс. Вместе с монтированием статических файлов через StaticFiles, это создает полноценный веб-интерфейс для работы с приложением, не требуя от пользователя работы непосредственно с API или командной строкой.
@@ -140,4 +119,4 @@ return custom_categories[cosine_similarities.argmax()]
 **Использование**
 Для обработки XML файлов используйте веб-интерфейс или отправьте запрос на /process_link с URL вашего XML файла. Полученный CSV файл будет доступен для загрузки через предоставленную ссылку.
 
-Докажите ваши данные простым и эффективным способом с Magic-XML!
+Обабатывайт ваши данные простым и эффективным способом с Magic-XML!
