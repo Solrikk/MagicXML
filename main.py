@@ -12,6 +12,8 @@ import spacy
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 import re
+import aiohttp
+import asyncio
 
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
@@ -51,15 +53,51 @@ def remove_unwanted_tags(description):
     description = f'<p>{description.strip()}</p>'.replace('\n', '<br>')
   else:
     description = ''
-
   return description
 
 
-def process_link(link_url):
+async def fetch_url(link_url):
+  async with aiohttp.ClientSession() as session:
+    async with session.get(link_url) as response:
+      response.raise_for_status()
+      return await response.text()
+
+
+async def process_offer(offer_elem, categories, custom_categories):
+  offer_id = offer_elem.get('id', '0')
+  offer_data = {'id': offer_id}
+  category_id = offer_elem.find('.//categoryId').text
+  original_category_name = categories.get(category_id, "Undefined")
+  offer_data['category_name'] = get_category_replacement(
+      original_category_name, custom_categories)
+
+  for category_elem in offer_elem:
+    if category_elem.tag not in ['picture', 'param']:
+      category_name = category_elem.tag
+      category_value = category_elem.text
+      if category_value and category_value.replace('.', '', 1).isdigit():
+        category_value = category_value.replace('.', ',')
+      offer_data[category_name] = category_value
+  picture_elems = offer_elem.findall('.//picture')
+  pictures = "///".join(
+      picture_elem.text
+      for picture_elem in picture_elems) if picture_elems else ""
+  if pictures:
+    offer_data['pictures'] = pictures
+  param_elems = offer_elem.findall('.//param')
+  params = {
+      param_elem.get('name'): param_elem.text
+      for param_elem in param_elems
+  } if param_elems else {}
+  offer_data.update(params)
+  if 'description' in offer_data and offer_data['description']:
+    offer_data['description'] = remove_unwanted_tags(offer_data['description'])
+  return offer_data
+
+
+async def process_link(link_url):
   try:
-    response = requests.get(link_url)
-    response.raise_for_status()
-    xml_data = response.content.decode('utf-8')
+    xml_data = await fetch_url(link_url)
     root = ET.fromstring(xml_data)
     custom_categories = load_custom_categories('categories.csv')
 
@@ -67,35 +105,11 @@ def process_link(link_url):
     for category in root.findall('.//category'):
       categories[category.get('id')] = category.text
 
-    data = []
-    for offer_elem in root.findall('.//offer'):
-      offer_id = offer_elem.get('id', '0')
-      offer_data = {'id': offer_id}
-      category_id = offer_elem.find('.//categoryId').text
-      original_category_name = categories.get(category_id, "Undefined")
-      offer_data['category_name'] = get_category_replacement(
-          original_category_name, custom_categories)
-
-      for category_elem in offer_elem:
-        if category_elem.tag not in ['picture', 'param']:
-          category_name = category_elem.tag
-          category_value = category_elem.text
-          if category_value and category_value.replace('.', '', 1).isdigit():
-            category_value = category_value.replace('.', ',')
-          offer_data[category_name] = category_value
-      picture_elems = offer_elem.findall('.//picture')
-      pictures = "///".join(
-          picture_elem.text
-          for picture_elem in picture_elems) if picture_elems else ""
-      if pictures:
-        offer_data['pictures'] = pictures
-      param_elems = offer_elem.findall('.//param')
-      params = {
-          param_elem.get('name'): param_elem.text
-          for param_elem in param_elems
-      } if param_elems else {}
-      offer_data.update(params)
-      data.append(offer_data)
+    tasks = [
+        process_offer(offer_elem, categories, custom_categories)
+        for offer_elem in root.findall('.//offer')
+    ]
+    data = await asyncio.gather(*tasks)
 
     save_path = "data_files"
     os.makedirs(save_path, exist_ok=True)
@@ -107,9 +121,7 @@ def process_link(link_url):
     category_names = set()
     for row in data:
       category_names.update(row.keys())
-    for row in data:
-      if 'description' in row and row['description']:
-        row['description'] = remove_unwanted_tags(row['description'])
+
     with open(file_path, 'w', newline='', encoding='utf-8-sig') as file:
       writer = csv.DictWriter(file,
                               fieldnames=sorted(category_names),
@@ -131,7 +143,7 @@ def read_index(request: Request):
 async def process_link_post(link_data: LinkData):
   link_url = link_data.link_url
   preset_id = link_data.preset_id
-  result = process_link(link_url)
+  result = await process_link(link_url)
   if result:
     downloaded_file_name = os.path.basename(result)
     return {
