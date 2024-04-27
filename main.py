@@ -33,7 +33,11 @@ def get_category_replacement(original_category_name, custom_categories):
   tfidf_matrix = vectorizer.fit_transform(all_categories)
   cosine_similarities = cosine_similarity(tfidf_matrix[0:1],
                                           tfidf_matrix[1:]).flatten()
-  return custom_categories[cosine_similarities.argmax()]
+  max_similarity_index = cosine_similarities.argmax()
+  if cosine_similarities[max_similarity_index] > 0:
+    return custom_categories[max_similarity_index]
+  else:
+    return original_category_name
 
 
 def load_custom_categories(filename):
