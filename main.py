@@ -134,7 +134,7 @@ async def process_link(link_url):
       writer.writerows(data)
     return file_path
   except Exception as e:
-    print(f"Произошла ошибка: {str(e)}")
+    print(f"An error occurred: {str(e)}")
     return None
 
 
@@ -152,12 +152,12 @@ async def process_link_post(link_data: LinkData):
     downloaded_file_name = os.path.basename(result)
     return {
         "file_url":
-        f"https://soldata-cs-cart.replit.app/download/data_files/{downloaded_file_name}",
+        f"https://soldata.replit.app/download/data_files/{downloaded_file_name}",
         "preset_id": preset_id
     }
   else:
     raise HTTPException(status_code=500,
-                        detail="Во время обработки ссылки произошла ошибка")
+                        detail="An error occurred while processing the link")
 
 
 @app.get("/download/data_files/{filename}")
@@ -168,4 +168,4 @@ async def download_csv(filename: str):
                         filename=filename,
                         media_type='application/octet-stream')
   else:
-    raise HTTPException(status_code=404, detail="Файл не найден.")
+    raise HTTPException(status_code=404, detail="File not found.")
