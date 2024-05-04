@@ -54,6 +54,8 @@ Follow these simple steps to get MagicXML up and running on your system:
    git clone https://github.com/Solrikk/MagicXML.git
    cd MagicXML
 
+-----------------
+
 **Application Structure:**
 - `FastAPI Application`: Initializes the main application with FastAPI, configures the routes for static files and the `Jinja2 templating engine`.
 - `LinkData class (Pydantic model)`: A model for validating incoming data received through a `POST request to /process_link`.
