@@ -1,21 +1,36 @@
 <div align="center">
-  <img src="assets/working.png" width="30%"/>
+  <img src="https://github.com/Solrikk/MagicXML/blob/main/assets/gif/taxi-data-science-graphs-on-pc-screen.gif" width="30%"/>
 </div>
+
+
+<div align="center"> <h3> <a href="https://github.com/Solrikk/MagicXML/blob/main/README.md">Английский</a> | <a href="https://github.com/Solrikk/MagicXML/blob/main/README_RU.md">Русский</a> | <a href="https://github.com/Solrikk/MagicXML/blob/main/README_GE.md">Немецкий</a> | <a href="https://github.com/Solrikk/MagicXML/blob/main/README_JP.md">Японский</a> | <a href="README_KR.md">Корейский</a> | <a href="README_CN.md">Китайский</a> </h3> </div>
+
+-----------------
 
 # Magic-XML ✨
 
-**_Magic-XML is available at https://xmlmagic.ru_**
+**_Magic-XML доступен на https://xmlmagic.ru_**
 
-##
+**_Magic-XML_** — это современное веб-приложение, разработанное для удобного и быстрого преобразования данных из XML файлов в формат CSV. Приложение использует мощность FastAPI для обеспечения высокой производительности при обработке запросов, а также применяет алгоритмы машинного обучения и обработку естественного языка для эффективного анализа и классификации текстовой информации. Magic-XML идеально подходит для аналитиков данных, разработчиков и всех, кто работает с большим объемом XML данных и стремится к их оптимизации и упрощению анализа.
 
-<div align="center">
-  <h3> <a href="https://github.com/Solrikk/MagicXML/blob/main/README.md"> English | <a href="https://github.com/Solrikk/MagicXML/blob/main/README_RU.md">Русский</a> | <a href="https://github.com/Solrikk/MagicXML/blob/main/README_GE.md"> Deutsch </a> | <a href="https://github.com/Solrikk/MagicXML/blob/main/README_JP.md"> 日本語 </a> | <a href="README_KR.md">한국어</a> | <a href="README_CN.md">中文</a> </h3>
-</div>
+**_Зависимости:_** ⚙️
+- `fastapi` - Фреймворк для построения API с автоматической документацией.
+- `uvicorn` - ASGI сервер для запуска приложений FastAPI.
+- `requests` - Библиотека для выполнения HTTP запросов.
+- `xml.etree.ElementTree` - Модуль для обработки XML.
+- `csv` - Модуль для работы с CSV файлами.
+- `os` - Модуль для взаимодействия с операционной системой, используется для создания директорий.
+- `Jinja2Templates` из FastAPI для работы с шаблонами Jinja2.
+- `StaticFiles` - Для обслуживания статических файлов.
+- `BaseModel` из `pydantic` - Для проверки данных.
+- `FileResponse` для отправки файлов в ответах.
+- `spacy` - Для обработки естественного языка, используется для категоризации.
+- `TfidfVectorizer` для векторизации текста.
+- `cosine_similarity` для расчета косинусного сходства.
+- `re` - Модуль для работы с регулярными выражениями.
 
-**_Magic-XML_** — is a modern web application developed for the convenient and swift transformation of data from XML files into CSV format. The application leverages the power of FastAPI to ensure high performance in request processing, as well as utilizes machine learning algorithms and natural language processing for efficient analysis and classification of textual information. Magic-XML is ideally suited for data analysts, developers, and anyone who deals with large volumes of XML data and aims at their optimization and simplification of analysis.
 
-
-**Dependencies:**
+**_Dependencies_:** 🚀
 - `fastapi` - A framework for building APIs with automatic documentation.
 - `uvicorn` - ASGI server for running FastAPI applications.
 - `requests` - Library for making HTTP requests.
@@ -49,15 +64,17 @@
 ## _Adapting Categories Using TF-IDF and Cosine Similarity:_ 
 The program employs `TfidfVectorizer` and `cosine similarity` to determine the most suitable custom category for a product based on its original category name obtained from XML. This showcases an interesting approach to the classification or `category mapping` task, where `machine learning methods` are used instead of direct matching to enhance the accuracy and flexibility of the process.
 
-[[created](https://github.com/Solrikk/MagicXML/tree/main/assets/TF-IDF%20Visualization)]
 <img src="https://github.com/Solrikk/MagicXML/blob/main/assets/TF-IDF%20Visualization/TF-IDF%20Visualization.png" width="95%" /> 
+
+more info[[created](https://github.com/Solrikk/MagicXML/tree/main/assets/TF-IDF%20Visualization)]
 
 **Cosine Similarity** is a metric used to determine how similar two entities are irrespective of their size. Mathematically, it measures the cosine of the angle between two vectors projected in a multi-dimensional space. This concept comes from the field of linear algebra and can be applied in various contexts such as data analysis, natural language processing (NLP), and information retrieval systems.
 
-The idea behind `cosine similarity` is quite simple. Imagine you have two vectors (arrays of numbers), each representing an entity's features in a multidimensional space. The "angle" between these vectors gives an indication of their similarity. If the angle is 0 degrees, it means the vectors are perfectly aligned, indicating a similarity score of 1, which is the maximum similarity. Conversely, if the angle is 90 degrees, the cosine similarity is 0, indicating no similarity. Angles between 0 and 90 degrees result in a similarity score somewhere between 0 and 1, with a smaller angle yielding a higher score.
+> The idea behind `cosine similarity` is quite simple. Imagine you have two vectors (arrays of numbers), each representing an entity's features in a multidimensional space. The "angle" between these vectors gives an indication of their similarity. If the angle is 0 degrees, it means the vectors are perfectly aligned, indicating a similarity score of 1, which is the maximum similarity. Conversely, if the angle is 90 degrees, the cosine similarity is 0, indicating no similarity. Angles between 0 and 90 degrees result in a similarity score somewhere between 0 and 1, with a smaller angle yielding a higher score.
 
-[[created](https://github.com/Solrikk/MagicXML/tree/main/assets/Visualization%20Cosine%20Similarity%20Matrix)]
 <img src="https://github.com/Solrikk/MagicXML/blob/main/assets/Visualization%20Cosine%20Similarity%20Matrix/Visualization%20Cosine%20Similarity%20Matrix.png" width="100%" />
+
+more info[[created](https://github.com/Solrikk/MagicXML/tree/main/assets/Visualization%20Cosine%20Similarity%20Matrix)]
 
 - TF (term frequency) is the ratio of the number of occurrences of a certain word to the total number of words in the document.
 
@@ -86,7 +103,7 @@ Then, the program calculates the cosine similarity between the vector of the ori
 3. **Selecting the Most Suitable Category:**
 After calculating the cosine similarities, the custom category with the highest similarity value relative to the original category is selected. This means that this category is considered the most suitable or closest to the original category in terms of semantic content.
 
-This concept is particularly useful in text analysis for comparing documents or texts. By converting texts into vectors (using techniques such as TF-IDF), where each dimension represents a specific word and the value in that dimension represents the significance of the word, we can compare these vectors to find out how similar the texts are to each other. This is often used in search engines, plagiarism checkers, and recommendation systems to find or suggest content that is most similar to a given input.
+> This concept is particularly useful in text analysis for comparing documents or texts. By converting texts into vectors (using techniques such as TF-IDF), where each dimension represents a specific word and the value in that dimension represents the significance of the word, we can compare these vectors to find out how similar the texts are to each other. This is often used in search engines, plagiarism checkers, and recommendation systems to find or suggest content that is most similar to a given input.
 
 ## _Asynchronous Request Handling:_
 FastAPI is built on top of Starlette and allows the handling of requests asynchronously using async and await keywords. This enables the application to scale and serve a large number of requests efficiently, improving performance on `I/O (Input/Output)` operations such as requests to external `APIs` or file read operations. In the application, asynchronous handling can be particularly useful in scenarios like loading files through an endpoint `/download/data_files/{filename}`, where asynchronous file reading can significantly reduce waiting time for the client.
@@ -97,7 +114,7 @@ FastAPI is built on top of Starlette and allows the handling of requests asynchr
 - Similarly, the asynchronous method download_csv handles `GET requests` for downloading files. This also allows for the handling of file download requests without blocking the main execution thread of the application.
 
 ## _Working with Text and Natural Language_
-Using spaCy and TfidfVectorizer from scikit-learn for text categorization demonstrates how machine learning tools can be effectively applied in web applications. spaCy is used for preprocessing text in Russian, which is important for the accurate operation of categorization, as text processing includes many aspects, such as lemmatization and stop-word removal, which significantly affect the final accuracy. TfidfVectorizer converts text into a vector representation, allowing then to calculate the cosine similarity between vectors, which is used to select the most suitable category for the text.
+> Using spaCy and TfidfVectorizer from scikit-learn for text categorization demonstrates how machine learning tools can be effectively applied in web applications. spaCy is used for preprocessing text in Russian, which is important for the accurate operation of categorization, as text processing includes many aspects, such as lemmatization and stop-word removal, which significantly affect the final accuracy. TfidfVectorizer converts text into a vector representation, allowing then to calculate the cosine similarity between vectors, which is used to select the most suitable category for the text.
 
 <img src="https://github.com/Solrikk/MagicXML/blob/main/assets/SpaCy%20Dependency%20Visualization/SpaCy%20Dependency%20Visualization.jpeg" width="150%" />
 
