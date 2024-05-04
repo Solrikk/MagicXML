@@ -14,55 +14,38 @@
 **_Magic-XML_** — это современное веб-приложение, разработанное для удобного и быстрого преобразования данных из XML файлов в формат CSV. Приложение использует мощность FastAPI для обеспечения высокой производительности при обработке запросов, а также применяет алгоритмы машинного обучения и обработку естественного языка для эффективного анализа и классификации текстовой информации. Magic-XML идеально подходит для аналитиков данных, разработчиков и всех, кто работает с большим объемом XML данных и стремится к их оптимизации и упрощению анализа.
 
 **_Зависимости:_** ⚙️
-- `fastapi` - Фреймворк для построения API с автоматической документацией.
+- `fastapi` - Фреймворк для создания API с автоматической документацией.
 - `uvicorn` - ASGI сервер для запуска приложений FastAPI.
 - `requests` - Библиотека для выполнения HTTP запросов.
 - `xml.etree.ElementTree` - Модуль для обработки XML.
 - `csv` - Модуль для работы с CSV файлами.
 - `os` - Модуль для взаимодействия с операционной системой, используется для создания директорий.
 - `Jinja2Templates` из FastAPI для работы с шаблонами Jinja2.
-- `StaticFiles` - Для обслуживания статических файлов.
-- `BaseModel` из `pydantic` - Для проверки данных.
+- `StaticFiles` - Для предоставления статических файлов.
+- `BaseModel` из `pydantic` - Для валидации данных.
 - `FileResponse` для отправки файлов в ответах.
 - `spacy` - Для обработки естественного языка, используется для категоризации.
 - `TfidfVectorizer` для векторизации текста.
 - `cosine_similarity` для расчета косинусного сходства.
 - `re` - Модуль для работы с регулярными выражениями.
 
+**Структура приложения:**
+- `Приложение FastAPI`: Инициализирует главное приложение с FastAPI, настраивает маршруты для статических файлов и `движок шаблонов Jinja2`.
+- `Класс LinkData (модель Pydantic)`: Модель для валидации входящих данных, получаемых через `POST-запрос на /process_link`.
 
-**_Dependencies_:** 🚀
-- `fastapi` - A framework for building APIs with automatic documentation.
-- `uvicorn` - ASGI server for running FastAPI applications.
-- `requests` - Library for making HTTP requests.
-- `xml.etree.ElementTree` - Module for XML processing.
-- `csv` - Module for working with CSV files.
-- `os` - Module for interacting with the operating system, used for creating directories.
-- `Jinja2Templates` from FastAPI for working with Jinja2 templates.
-- `StaticFiles` - For serving static files.
-- `BaseModel` from `pydantic` - For data validation.
-- `FileResponse` for sending files in responses.
-- `spacy` - For natural language processing, used for categorization.
-- `TfidfVectorizer` for text vectorization.
-- `cosine_similarity` for calculating cosine similarity.
-- `re` - Module for working with regular expressions.
+**Функции обработки данных:**
+- `Get_category_replacement()`: Функция для категоризации на основе косинусного сходства между векторами.
+- `Load_custom_categories()`: Загрузка пользовательских категорий из CSV файла.
+- `Remove_unwanted_tags()`: Очистка описаний продуктов от HTML тегов.
+- `Process_link()`: Главная функция для обработки XML ссылки, извлечения и сохранения данных в CSV файл.
 
-**Application Structure:**
-- `FastAPI Application`: Initializes the main application with FastAPI, configures the routes for static files and the `Jinja2 templating engine`.
-- `LinkData class (Pydantic model)`: A model for validating incoming data received through a `POST request to /process_link`.
+**Маршруты FastAPI:**
+- `GET /`: Отображение главной страницы через шаблон Jinja2.
+- `POST /process_link`: Принимает данные для обработки ссылки и генерирует CSV файл.
+- `GET /download/data_files/{filename}`: Возможность скачивания сгенерированных CSV файлов.
 
-**Data processing functions:**
-- `Get_category_replacement()`: A function for categorization based on the cosine similarity between vectors.
-- `Load_custom_categories()`: Loading custom categories from a CSV file.
-- `Remove_unwanted_tags()`: Cleaning product descriptions of HTML tags.
-- `Process_link()`: The main function for processing an XML link, extracting, and saving data to a CSV file.
-
-**FastAPI Routes:**
-- `GET /`: Display the home page through a Jinja2 template.
-- `POST /process_link`: Accepts data for processing the link and generates a CSV file.
-- `GET /download/data_files/{filename}`: Ability to download generated CSV files.
-
-## _Adapting Categories Using TF-IDF and Cosine Similarity:_ 
-The program employs `TfidfVectorizer` and `cosine similarity` to determine the most suitable custom category for a product based on its original category name obtained from XML. This showcases an interesting approach to the classification or `category mapping` task, where `machine learning methods` are used instead of direct matching to enhance the accuracy and flexibility of the process.
+## _Адаптация категорий с использованием TF-IDF и косинусного сходства:_
+Программа использует `TfidfVectorizer` и `косинусное сходство` для определения наиболее подходящей пользовательской категории для продукта на основе его исходного названия категории, полученного из XML. Это демонстрирует интересный подход к задаче классификации или `маппинга категорий`, где вместо прямого сопоставления используются `методы машинного обучения`, чтобы повысить точность и гибкость процесса.
 
 <img src="https://github.com/Solrikk/MagicXML/blob/main/assets/TF-IDF%20Visualization/TF-IDF%20Visualization.png" width="95%" /> 
 
