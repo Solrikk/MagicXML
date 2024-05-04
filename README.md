@@ -9,7 +9,7 @@
 
 # Magic-XML ✨
 
-**_Magic-XML is available at https://xmlmagic.ru_**
+🚀 **_Magic-XML is available at https://xmlmagic.ru_** 🚀
 
 **_Magic-XML_** — is a modern web application developed for the convenient and swift transformation of data from XML files into CSV format. The application leverages the power of FastAPI to ensure high performance in request processing, as well as utilizes machine learning algorithms and natural language processing for efficient analysis and classification of textual information. Magic-XML is ideally suited for data analysts, developers, and anyone who deals with large volumes of XML data and aims at their optimization and simplification of analysis.
 
@@ -29,6 +29,30 @@
 - `TfidfVectorizer` for text vectorization.
 - `cosine_similarity` for calculating cosine similarity.
 - `re` - Module for working with regular expressions.
+
+## ⚠️ Getting Started with MagicXML: ⚠️
+
+Welcome to MagicXML, an innovative application designed to process and transform your XML data effortlessly. Whether you're dealing with large datasets, seeking to enhance your data analysis workflow, or needing to automate data processing, MagicXML offers powerful tools and features to meet your needs.
+
+### Prerequisites:
+
+Before you dive into MagicXML, ensure you have the following installed:
+
+- Python (version 3.8 or later) [Download Python](https://www.python.org/downloads/)
+- pip (usually comes with Python installation)
+- An active internet connection for initial setup and downloading dependencies.
+
+### Installation:
+
+Follow these simple steps to get MagicXML up and running on your system:
+
+1. **Clone the Repository:**
+
+   First, clone the MagicXML repository to your local machine using git:
+
+   ```bash
+   git clone https://github.com/Solrikk/MagicXML.git
+   cd MagicXML
 
 **Application Structure:**
 - `FastAPI Application`: Initializes the main application with FastAPI, configures the routes for static files and the `Jinja2 templating engine`.
