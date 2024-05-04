@@ -1,10 +1,9 @@
 <div align="center">
-  <img src="assets/working.png" width="30%"/>
+  <img src="https://github.com/Solrikk/MagicXML/blob/main/assets/gif/taxi-data-science-graphs-on-pc-screen.gif" width="30%"/>
 </div>
 
-<div align="center">
-  <h3> <a href="https://github.com/Solrikk/MagicXML/blob/main/README.md"> English | <a href="https://github.com/Solrikk/MagicXML/blob/main/README_RU.md">Русский</a> | <a href="https://github.com/Solrikk/MagicXML/blob/main/README_GE.md"> Deutsch </a> | <a href="https://github.com/Solrikk/MagicXML/blob/main/README_JP.md"> 日本語 </a> | <a href="README_KR.md">한국어</a> | <a href="README_CN.md">中文</a> </h3>
-</div>
+
+<div align="center"> <h3> <a href="https://github.com/Solrikk/MagicXML/blob/main/README.md">English</a> | <a href="https://github.com/Solrikk/MagicXML/blob/main/README_RU.md">Russian</a> | <a href="https://github.com/Solrikk/MagicXML/blob/main/README_GE.md">German</a> | <a href="https://github.com/Solrikk/MagicXML/blob/main/README_JP.md">Japanese</a> | <a href="README_KR.md">Korean</a> | <a href="README_CN.md">Chinese</a> </h3> </div>
 
 -----------------
 
