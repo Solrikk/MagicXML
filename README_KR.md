@@ -1,35 +1,60 @@
 <div align="center">
-  <img src="assets/working.png" width="30%"/>
+  <img src="https://github.com/Solrikk/MagicXML/blob/main/assets/gif/taxi-data-science-graphs-on-pc-screen.gif" width="30%"/>
 </div>
+
+
+<div align="center"> <h3> <a href="https://github.com/Solrikk/MagicXML/blob/main/README.md">영어</a> | <a href="https://github.com/Solrikk/MagicXML/blob/main/README_RU.md">러시아어</a> | <a href="https://github.com/Solrikk/MagicXML/blob/main/README_GE.md">독일어</a> | <a href="https://github.com/Solrikk/MagicXML/blob/main/README_JP.md">일본어</a> | <a href="README_KR.md">⭐한국어⭐</a> | <a href="README_CN.md">중국어</a> </h3> </div>
+
+-----------------
 
 # Magic-XML ✨
 
-**_Magic-XML is available at https://xmlmagic.ru_**
+🚀 **_Magic-XML은 https://xmlmagic.ru 에서 사용할 수 있습니다_** 🚀
 
-##
-
-<div align="center">
-  <h3> <a href="https://github.com/Solrikk/MagicXML/blob/main/README.md"> English | <a href="https://github.com/Solrikk/MagicXML/blob/main/README_RU.md">Русский</a> | <a href="https://github.com/Solrikk/MagicXML/blob/main/README_GE.md"> Deutsch </a> | <a href="https://github.com/Solrikk/MagicXML/blob/main/README_JP.md"> 日本語 </a> | <a href="README_KR.md">한국어</a> | <a href="README_CN.md">中文</a> </h3>
-</div>
-
-**_Magic-XML_** — is a modern web application developed for the convenient and swift transformation of data from XML files into CSV format. The application leverages the power of FastAPI to ensure high performance in request processing, as well as utilizes machine learning algorithms and natural language processing for efficient analysis and classification of textual information. Magic-XML is ideally suited for data analysts, developers, and anyone who deals with large volumes of XML data and aims at their optimization and simplification of analysis.
+**_Magic-XML_**은 XML 파일에서 CSV 형식으로 데이터를 편리하고 신속하게 변환하기 위해 개발된 현대적인 웹 애플리케이션입니다. 이 애플리케이션은 요청 처리에서 높은 성능을 보장하기 위해 FastAPI의 강력함을 활용하며, 텍스트 정보의 효율적인 분석 및 분류를 위해 기계 학습 알고리즘 및 자연어 처리를 사용합니다. Magic-XML은 대량의 XML 데이터를 다루고, 그것의 최적화 및 분석 단순화를 목표로 하는 데이터 분석가, 개발자 및 모든 사용자에게 이상적입니다.
 
 
-**Dependencies:**
-- `fastapi` - A framework for building APIs with automatic documentation.
-- `uvicorn` - ASGI server for running FastAPI applications.
-- `requests` - Library for making HTTP requests.
-- `xml.etree.ElementTree` - Module for XML processing.
-- `csv` - Module for working with CSV files.
-- `os` - Module for interacting with the operating system, used for creating directories.
-- `Jinja2Templates` from FastAPI for working with Jinja2 templates.
-- `StaticFiles` - For serving static files.
-- `BaseModel` from `pydantic` - For data validation.
-- `FileResponse` for sending files in responses.
-- `spacy` - For natural language processing, used for categorization.
-- `TfidfVectorizer` for text vectorization.
-- `cosine_similarity` for calculating cosine similarity.
-- `re` - Module for working with regular expressions.
+**의존성:**
+- `fastapi` - 자동 문서화를 가진 API 구축을 위한 프레임워크.
+- `uvicorn` - FastAPI 애플리케이션을 실행하기 위한 ASGI 서버.
+- `requests` - HTTP 요청을 만들기 위한 라이브러리.
+- `xml.etree.ElementTree` - XML 처리를 위한 모듈.
+- `csv` - CSV 파일을 다루기 위한 모듈.
+- `os` - 운영 시스템과 상호 작용하기 위한 모듈로, 디렉토리 생성에 사용됩니다.
+- `Jinja2Templates` - FastAPI에서 Jinja2 템플릿을 다루기 위함.
+- `StaticFiles` - 정적 파일 제공.
+- `BaseModel` - `pydantic`에서 데이터 검증을 위함.
+- `FileResponse` - 응답에서 파일을 보내기 위함.
+- `spacy` - 분류를 위해 사용되는 자연어 처리.
+- `TfidfVectorizer` - 텍스트 벡터화를 위함.
+- `cosine_similarity` - 코사인 유사도 계산을 위함.
+- `re` - 정규 표현식을 다루기 위한 모듈.
+
+## ⚠️ Getting Started with MagicXML: ⚠️
+
+Welcome to MagicXML, an innovative application designed to process and transform your XML data effortlessly. Whether you're dealing with large datasets, seeking to enhance your data analysis workflow, or needing to automate data processing, MagicXML offers powerful tools and features to meet your needs.
+
+### Prerequisites:
+
+Before you dive into MagicXML, ensure you have the following installed:
+
+- Python (version 3.8 or later) [Download Python](https://www.python.org/downloads/)
+- pip (usually comes with Python installation)
+- An active internet connection for initial setup and downloading dependencies.
+
+### Installation:
+
+Follow these simple steps to get MagicXML up and running on your system:
+
+1. **Clone the Repository:**
+
+   First, clone the MagicXML repository to your local machine using git:
+
+   ```bash
+   git clone https://github.com/Solrikk/MagicXML.git
+   cd MagicXML
+
+-----------------
 
 **Application Structure:**
 - `FastAPI Application`: Initializes the main application with FastAPI, configures the routes for static files and the `Jinja2 templating engine`.
@@ -49,15 +74,17 @@
 ## _Adapting Categories Using TF-IDF and Cosine Similarity:_ 
 The program employs `TfidfVectorizer` and `cosine similarity` to determine the most suitable custom category for a product based on its original category name obtained from XML. This showcases an interesting approach to the classification or `category mapping` task, where `machine learning methods` are used instead of direct matching to enhance the accuracy and flexibility of the process.
 
-[[created](https://github.com/Solrikk/MagicXML/tree/main/assets/TF-IDF%20Visualization)]
 <img src="https://github.com/Solrikk/MagicXML/blob/main/assets/TF-IDF%20Visualization/TF-IDF%20Visualization.png" width="95%" /> 
+
+more info[[created](https://github.com/Solrikk/MagicXML/tree/main/assets/TF-IDF%20Visualization)]
 
 **Cosine Similarity** is a metric used to determine how similar two entities are irrespective of their size. Mathematically, it measures the cosine of the angle between two vectors projected in a multi-dimensional space. This concept comes from the field of linear algebra and can be applied in various contexts such as data analysis, natural language processing (NLP), and information retrieval systems.
 
-The idea behind `cosine similarity` is quite simple. Imagine you have two vectors (arrays of numbers), each representing an entity's features in a multidimensional space. The "angle" between these vectors gives an indication of their similarity. If the angle is 0 degrees, it means the vectors are perfectly aligned, indicating a similarity score of 1, which is the maximum similarity. Conversely, if the angle is 90 degrees, the cosine similarity is 0, indicating no similarity. Angles between 0 and 90 degrees result in a similarity score somewhere between 0 and 1, with a smaller angle yielding a higher score.
+> The idea behind `cosine similarity` is quite simple. Imagine you have two vectors (arrays of numbers), each representing an entity's features in a multidimensional space. The "angle" between these vectors gives an indication of their similarity. If the angle is 0 degrees, it means the vectors are perfectly aligned, indicating a similarity score of 1, which is the maximum similarity. Conversely, if the angle is 90 degrees, the cosine similarity is 0, indicating no similarity. Angles between 0 and 90 degrees result in a similarity score somewhere between 0 and 1, with a smaller angle yielding a higher score.
 
-[[created](https://github.com/Solrikk/MagicXML/tree/main/assets/Visualization%20Cosine%20Similarity%20Matrix)]
 <img src="https://github.com/Solrikk/MagicXML/blob/main/assets/Visualization%20Cosine%20Similarity%20Matrix/Visualization%20Cosine%20Similarity%20Matrix.png" width="100%" />
+
+more info[[created](https://github.com/Solrikk/MagicXML/tree/main/assets/Visualization%20Cosine%20Similarity%20Matrix)]
 
 - TF (term frequency) is the ratio of the number of occurrences of a certain word to the total number of words in the document.
 
@@ -86,7 +113,7 @@ Then, the program calculates the cosine similarity between the vector of the ori
 3. **Selecting the Most Suitable Category:**
 After calculating the cosine similarities, the custom category with the highest similarity value relative to the original category is selected. This means that this category is considered the most suitable or closest to the original category in terms of semantic content.
 
-This concept is particularly useful in text analysis for comparing documents or texts. By converting texts into vectors (using techniques such as TF-IDF), where each dimension represents a specific word and the value in that dimension represents the significance of the word, we can compare these vectors to find out how similar the texts are to each other. This is often used in search engines, plagiarism checkers, and recommendation systems to find or suggest content that is most similar to a given input.
+> This concept is particularly useful in text analysis for comparing documents or texts. By converting texts into vectors (using techniques such as TF-IDF), where each dimension represents a specific word and the value in that dimension represents the significance of the word, we can compare these vectors to find out how similar the texts are to each other. This is often used in search engines, plagiarism checkers, and recommendation systems to find or suggest content that is most similar to a given input.
 
 ## _Asynchronous Request Handling:_
 FastAPI is built on top of Starlette and allows the handling of requests asynchronously using async and await keywords. This enables the application to scale and serve a large number of requests efficiently, improving performance on `I/O (Input/Output)` operations such as requests to external `APIs` or file read operations. In the application, asynchronous handling can be particularly useful in scenarios like loading files through an endpoint `/download/data_files/{filename}`, where asynchronous file reading can significantly reduce waiting time for the client.
@@ -97,7 +124,7 @@ FastAPI is built on top of Starlette and allows the handling of requests asynchr
 - Similarly, the asynchronous method download_csv handles `GET requests` for downloading files. This also allows for the handling of file download requests without blocking the main execution thread of the application.
 
 ## _Working with Text and Natural Language_
-Using spaCy and TfidfVectorizer from scikit-learn for text categorization demonstrates how machine learning tools can be effectively applied in web applications. spaCy is used for preprocessing text in Russian, which is important for the accurate operation of categorization, as text processing includes many aspects, such as lemmatization and stop-word removal, which significantly affect the final accuracy. TfidfVectorizer converts text into a vector representation, allowing then to calculate the cosine similarity between vectors, which is used to select the most suitable category for the text.
+> Using spaCy and TfidfVectorizer from scikit-learn for text categorization demonstrates how machine learning tools can be effectively applied in web applications. spaCy is used for preprocessing text in Russian, which is important for the accurate operation of categorization, as text processing includes many aspects, such as lemmatization and stop-word removal, which significantly affect the final accuracy. TfidfVectorizer converts text into a vector representation, allowing then to calculate the cosine similarity between vectors, which is used to select the most suitable category for the text.
 
 <img src="https://github.com/Solrikk/MagicXML/blob/main/assets/SpaCy%20Dependency%20Visualization/SpaCy%20Dependency%20Visualization.jpeg" width="150%" />
 
