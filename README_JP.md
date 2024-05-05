@@ -3,33 +3,32 @@
 </div>
 
 
-<div align="center"> <h3> <a href="https://github.com/Solrikk/MagicXML/blob/main/README.md">English</a> | <a href="https://github.com/Solrikk/MagicXML/blob/main/README_RU.md">Russian</a> | <a href="https://github.com/Solrikk/MagicXML/blob/main/README_GE.md">German</a> | <a href="https://github.com/Solrikk/MagicXML/blob/main/README_JP.md">⭐Japanese⭐</a> | <a href="README_KR.md">Korean</a> | <a href="README_CN.md">Chinese</a> </h3> </div>
+<div align="center"> <h3> <a href="https://github.com/Solrikk/MagicXML/blob/main/README.md">英語</a> | <a href="https://github.com/Solrikk/MagicXML/blob/main/README_RU.md">ロシア語</a> | <a href="https://github.com/Solrikk/MagicXML/blob/main/README_GE.md">ドイツ語</a> | <a href="https://github.com/Solrikk/MagicXML/blob/main/README_JP.md">⭐日本語⭐</a> | <a href="README_KR.md">韓国語</a> | <a href="README_CN.md">中国語</a> </h3> </div>
 
 -----------------
 
 # Magic-XML ✨
 
-🚀 **_Magic-XML is available at https://xmlmagic.ru_** 🚀
+🚀 **_Magic-XMLは https://xmlmagic.ru で利用可能です_** 🚀
 
-**_Magic-XML_** — is a modern web application developed for the convenient and swift transformation of data from XML files into CSV format. The application leverages the power of FastAPI to ensure high performance in request processing, as well as utilizes machine learning algorithms and natural language processing for efficient analysis and classification of textual information. Magic-XML is ideally suited for data analysts, developers, and anyone who deals with large volumes of XML data and aims at their optimization and simplification of analysis.
+**_Magic-XML_** は、XMLファイルからCSV形式へのデータの便利で迅速な変換のために開発された現代的なWebアプリケーションです。このアプリケーションは、リクエスト処理における高性能を保証するためにFastAPIの力を活用し、テキスト情報の効率的な分析と分類のために機械学習アルゴリズムと自然言語処理を使用しています。Magic-XMLは、大量のXMLデータを扱い、その最適化と分析の単純化を目指すデータアナリスト、開発者、および誰にとっても理想的です。
 
 
-**Dependencies:**
-- `fastapi` - A framework for building APIs with automatic documentation.
-- `uvicorn` - ASGI server for running FastAPI applications.
-- `requests` - Library for making HTTP requests.
-- `xml.etree.ElementTree` - Module for XML processing.
-- `csv` - Module for working with CSV files.
-- `os` - Module for interacting with the operating system, used for creating directories.
-- `Jinja2Templates` from FastAPI for working with Jinja2 templates.
-- `StaticFiles` - For serving static files.
-- `BaseModel` from `pydantic` - For data validation.
-- `FileResponse` for sending files in responses.
-- `spacy` - For natural language processing, used for categorization.
-- `TfidfVectorizer` for text vectorization.
-- `cosine_similarity` for calculating cosine similarity.
-- `re` - Module for working with regular expressions.
-
+**依存関係:**
+- `fastapi` - 自動ドキュメント機能を持つAPI構築用のフレームワーク。
+- `uvicorn` - FastAPIアプリケーションを実行するためのASGIサーバー。
+- `requests` - HTTPリクエストを行うためのライブラリ。
+- `xml.etree.ElementTree` - XML処理用のモジュール。
+- `csv` - CSVファイルを扱うためのモジュール。
+- `os` - オペレーティングシステムとの対話に使用されるモジュール、ディレクトリ作成に使用。
+- `Jinja2Templates` - FastAPIからのJinja2テンプレートを扱うためのもの。
+- `StaticFiles` - 静的ファイルを提供するためのもの。
+- `BaseModel` - `pydantic`からのデータバリデーションのため。
+- `FileResponse` - レスポンスでファイルを送信するためのもの。
+- `spacy` - カテゴリゼーションのために使用される自然言語処理のため。
+- `TfidfVectorizer` - テキストベクトル化のため。
+- `cosine_similarity` - コサイン類似度の計算のため。
+- `re` - 正規表現を扱うためのモジュール。
 ## ⚠️ Getting Started with MagicXML: ⚠️
 
 Welcome to MagicXML, an innovative application designed to process and transform your XML data effortlessly. Whether you're dealing with large datasets, seeking to enhance your data analysis workflow, or needing to automate data processing, MagicXML offers powerful tools and features to meet your needs.
