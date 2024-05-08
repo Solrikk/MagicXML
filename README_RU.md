@@ -51,23 +51,23 @@
 
 more info[[created](https://github.com/Solrikk/MagicXML/tree/main/assets/TF-IDF%20Visualization)]
 
-**Cosine Similarity** is a metric used to determine how similar two entities are irrespective of their size. Mathematically, it measures the cosine of the angle between two vectors projected in a multi-dimensional space. This concept comes from the field of linear algebra and can be applied in various contexts such as data analysis, natural language processing (NLP), and information retrieval systems.
+**Косинусное сходство** — это метрика, используемая для определения степени сходства между двумя сущностями вне зависимости от их размера. Математически оно измеряет косинус угла между двумя векторами, проецированными в многомерное пространство. Этот концепт берёт начало из области линейной алгебры и может применяться в различных контекстах, таких как анализ данных, обработка естественного языка (NLP) и системы поиска информации.
 
-> The idea behind `cosine similarity` is quite simple. Imagine you have two vectors (arrays of numbers), each representing an entity's features in a multidimensional space. The "angle" between these vectors gives an indication of their similarity. If the angle is 0 degrees, it means the vectors are perfectly aligned, indicating a similarity score of 1, which is the maximum similarity. Conversely, if the angle is 90 degrees, the cosine similarity is 0, indicating no similarity. Angles between 0 and 90 degrees result in a similarity score somewhere between 0 and 1, with a smaller angle yielding a higher score.
+> Суть `косинусного сходства` довольно проста. Представьте, что у вас есть два вектора (массивы чисел), каждый из которых представляет характеристики сущности в многомерном пространстве. "Угол" между этими векторами даёт представление о их сходстве. Если угол равен 0 градусов, это значит, что векторы идеально выровнены, что указывает на коэффициент сходства 1 — максимальное сходство. Наоборот, если угол равен 90 градусам, косинусное сходство равно 0, указывая на отсутствие сходства. Углы между 0 и 90 градусами дают коэффициент сходства где-то между 0 и 1, при этом меньший угол даёт более высокий коэффициент.
 
-<img src="https://github.com/Solrikk/MagicXML/blob/main/assets/Visualization%20Cosine%20Similarity%20Matrix/Visualization%20Cosine%20Similarity%20Matrix.png" width="100%" />
+![Визуализация косинусного сходства](https://github.com/Solrikk/MagicXML/blob/main/assets/Visualization%20Cosine%20Similarity%20Matrix/Visualization%20Cosine%20Similarity%20Matrix.png)
 
-more info[[created](https://github.com/Solrikk/MagicXML/tree/main/assets/Visualization%20Cosine%20Similarity%20Matrix)]
+подробнее[[создано](https://github.com/Solrikk/MagicXML/tree/main/assets/Visualization%20Cosine%20Similarity%20Matrix)]
 
-- TF (term frequency) is the ratio of the number of occurrences of a certain word to the total number of words in the document.
+- TF (**частота термина**) — это отношение количества вхождений определённого слова к общему количеству слов в документе.
 
-<img src="https://wikimedia.org/api/rest_v1/media/math/render/svg/8ef207eb03f6e9b6f71e73739f45b5179b4f17cc" width="15%" />
+![Частота термина](https://wikimedia.org/api/rest_v1/media/math/render/svg/8ef207eb03f6e9b6f71e73739f45b5179b4f17cc)
 
-- IDF (Inverse Document Frequency) - the inversion of the frequency with which a certain word appears in the documents of a collection. Karen Spärck Jones is the founder of this concept. Taking into account IDF reduces the weight of commonly used words. For each unique word within a specific collection of documents, there is only one IDF value.
+- IDF (**обратная документная частота**) — инверсия частоты, с которой определённое слово появляется в документах коллекции. Основатель этого концепта — Карен Сперк Джонс. Учёт IDF уменьшает вес широко используемых слов. Для каждого уникального слова в специфической коллекции документов существует только одно значение IDF.
 
-<img src="https://wikimedia.org/api/rest_v1/media/math/render/svg/b88834044365dea6aedba224eabe7147d4d328ef" width="30%" />
+![Обратная документная частота](https://wikimedia.org/api/rest_v1/media/math/render/svg/b88834044365dea6aedba224eabe7147d4d328ef)
 
-```Python
+```python
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
