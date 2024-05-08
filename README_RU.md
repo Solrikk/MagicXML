@@ -79,45 +79,45 @@ def get_category_replacement(original_category_name, custom_categories):
     return custom_categories[cosine_similarities.argmax()]
 ```
 
-1. **Category Vectorization:**
-Using TF-IDF, the program transforms the names of the categories (one of the original names and a list of custom categories) into a vector representation. This means that each category becomes a vector in a multidimensional space, where each dimension represents a word from the category corpus, and the value represents the importance of the word in the context of the category.
-2. **Finding Cosine Similarity:**
-Then, the program calculates the cosine similarity between the vector of the original category and the vectors of each custom category. This compares how close the custom categories are to the original category in terms of their contextual similarity.
-3. **Selecting the Most Suitable Category:**
-After calculating the cosine similarities, the custom category with the highest similarity value relative to the original category is selected. This means that this category is considered the most suitable or closest to the original category in terms of semantic content.
+1. **Векторизация категорий:**
+Используя TF-IDF, программа преобразует названия категорий (одно из оригинальных названий и список пользовательских категорий) в векторное представление. Это означает, что каждая категория становится вектором в многомерном пространстве, где каждое измерение представляет слово из корпуса категории, а значение отражает важность слова в контексте категории.
+2. **Нахождение косинусного сходства:**
+Затем программа вычисляет косинусное сходство между вектором оригинальной категории и векторами каждой пользовательской категории. Это сравнивает, насколько близки пользовательские категории к оригинальной категории в терминах контекстуального сходства.
+3. **Выбор наиболее подходящей категории:**
+После вычисления косинусных сходств выбирается пользовательская категория с наивысшим значением сходства по отношению к оригинальной категории. Это означает, что данная категория считается наиболее подходящей или близкой к оригинальной категории с точки зрения семантического содержания.
 
-> This concept is particularly useful in text analysis for comparing documents or texts. By converting texts into vectors (using techniques such as TF-IDF), where each dimension represents a specific word and the value in that dimension represents the significance of the word, we can compare these vectors to find out how similar the texts are to each other. This is often used in search engines, plagiarism checkers, and recommendation systems to find or suggest content that is most similar to a given input.
+> Этот концепт особенно полезен при анализе текстов для сравнения документов или текстов. Преобразуя тексты в векторы (с использованием таких техник, как TF-IDF), где каждое измерение представляет конкретное слово и значение в этом измерении отражает значимость слова, мы можем сравнить эти векторы, чтобы выяснить, насколько похожи тексты друг на друга. Это часто используется в поисковых системах, системах проверки на плагиат и рекомендательных системах для поиска или предложения контента, который наиболее похож на данный ввод.
 
-## _Asynchronous Request Handling:_
-FastAPI is built on top of Starlette and allows the handling of requests asynchronously using async and await keywords. This enables the application to scale and serve a large number of requests efficiently, improving performance on `I/O (Input/Output)` operations such as requests to external `APIs` or file read operations. In the application, asynchronous handling can be particularly useful in scenarios like loading files through an endpoint `/download/data_files/{filename}`, where asynchronous file reading can significantly reduce waiting time for the client.
+## _Асинхронная обработка запросов:_
+FastAPI построен на основе Starlette и позволяет обрабатывать запросы асинхронно с использованием ключевых слов async и await. Это позволяет приложению масштабироваться и эффективно обслуживать большое количество запросов, улучшая производительность при операциях ввода/вывода, таких как запросы к внешним API или операции чтения файлов. В приложении асинхронная обработка может быть особенно полезной в сценариях, подобных загрузке файлов через конечную точку `/download/data_files/{filename}`, где асинхронное чтение файлов может значительно сократить время ожидания для клиента.
 
-## _Handling endpoints with asynchronous functions:_
+## _Обработка конечных точек с асинхронными функциями:_
 
-- In the code, an asynchronous endpoint process_link_post is defined through the decorator `@app.post("/process_link")`. This endpoint asynchronously processes `POST requests` by sending link data (for example, a URL to process). Using the async keyword before the function definition indicates that the function will execute asynchronously.
-- Similarly, the asynchronous method download_csv handles `GET requests` for downloading files. This also allows for the handling of file download requests without blocking the main execution thread of the application.
+- В коде определена асинхронная конечная точка process_link_post через декоратор `@app.post("/process_link")`. Эта конечная точка асинхронно обрабатывает `POST-запросы`, отправляя данные ссылки (например, URL для обработки). Использование ключевого слова async перед определением функции указывает, что функция будет выполняться асинхронно.
+- Аналогично, асинхронный метод download_csv обрабатывает `GET-запросы` на скачивание файлов. Это также позволяет обрабатывать запросы на скачивание файлов без блокировки основного исполнительного потока приложения.
 
-## _Working with Text and Natural Language_
-> Using spaCy and TfidfVectorizer from scikit-learn for text categorization demonstrates how machine learning tools can be effectively applied in web applications. spaCy is used for preprocessing text in Russian, which is important for the accurate operation of categorization, as text processing includes many aspects, such as lemmatization and stop-word removal, which significantly affect the final accuracy. TfidfVectorizer converts text into a vector representation, allowing then to calculate the cosine similarity between vectors, which is used to select the most suitable category for the text.
+## _Работа с текстом и обработка естественного языка_
+> Использование spaCy и TfidfVectorizer из scikit-learn для категоризации текстов демонстрирует, как инструменты машинного обучения могут быть эффективно применены в веб-приложениях. spaCy используется для предварительной обработки текста на русском языке, что важно для точной работы категоризации, поскольку обработка текста включает в себя множество аспектов, таких как лемматизация и удаление стоп-слов, которые значительно влияют на конечную точность. TfidfVectorizer преобразует текст в векторное представление, позволяя затем вычислить косинусное сходство между векторами, что используется для выбора наиболее подходящей категории для текста.
 
-<img src="https://github.com/Solrikk/MagicXML/blob/main/assets/SpaCy%20Dependency%20Visualization/SpaCy%20Dependency%20Visualization.jpeg" width="150%" />
+![Визуализация зависимостей в SpaCy](https://github.com/Solrikk/MagicXML/blob/main/assets/SpaCy%20Dependency%20Visualization/SpaCy%20Dependency%20Visualization.jpeg)
 
-## _XML Processing and CSV Generation_
-The application involves parsing XML files to extract product data, demonstrating the ability to work with various data formats. After extracting and classifying the data, it is saved in CSV format, which is a widely accepted standard for exchanging tabular data and can be easily imported into various systems and applications for further analysis.
+## _Обработка XML и генерация CSV_
+Приложение включает в себя разбор XML-файлов для извлечения данных о продуктах, демонстрируя возможность работы с различными форматами данных. После извлечения и классификации данных они сохраняются в формате CSV, который является широко принятым стандартом для обмена табличными данными и может быть легко импортирован в различные системы и приложения для дальнейшего анализа.
 
-## _Technical Implementation of the Web Interface_
-The application uses Jinja2Templates for generating dynamic HTML content. This allows the creation of a more interactive and user-oriented interface. Together with serving static files through StaticFiles, it creates a full-fledged web interface for interacting with the application, eliminating the need for the user to work directly with the API or command line.
+## _Техническая реализация веб-интерфейса_
+Приложение использует Jinja2Templates для генерации динамического HTML-контента. Это позволяет создать более интерактивный и ориентированный на пользователя интерфейс. Вместе с обслуживанием статических файлов через StaticFiles это создает полноценный веб-интерфейс для взаимодействия с приложением, устраняя необходимость для пользователя работать напрямую с API или командной строкой.
 
-## _Data Validation with Pydantic_
-Using Pydantic models for validating incoming data not only ensures the correctness of the data but also allows for the automatic generation of API documentation. This significantly simplifies both the development and the use of the API, as clients can precisely know what data and in what format are expected on input.
+## _Валидация данных с помощью Pydantic_
+Использование моделей Pydantic для валидации входящих данных не только обеспечивает правильность данных, но и позволяет автоматически генерировать документацию API. Это значительно упрощает как разработку, так и использование API, поскольку клиенты могут точно знать, какие данные и в каком формате ожидаются на входе.
 
-## _Error and Exception Handling_
-The application includes exception handling, such as a URL access error or a file reading error. This ensures the application's stability and provides informative feedback to the user about the issue through FastAPI's HTTP exception mechanisms.
+## _Обработка ошибок и исключений_
+Приложение включает обработку исключений, таких как ошибка доступа к URL или ошибка чтения файла. Это обеспечивает стабильность работы приложения и предоставляет пользователю информативную обратную связь о проблеме через механизмы исключений HTTP в FastAPI.
 
-## _Cloning the Repository: Clone the application code to your machine._
-- Installing dependencies: Install the necessary dependencies using `pip install -r requirements.txt.`
-- Running the server: Start the application with the command `uvicorn main:app --reload.`
+## _Клонирование репозитория: Клонируйте код приложения на свою машину._
+- Установка зависимостей: Установите необходимые зависимости, используя `pip install -r requirements.txt.`
+- Запуск сервера: Запустите приложение с помощью команды `uvicorn main:app --reload.`
 
-**Usage:**
-- To process XML files, use the web interface or send a request to `/process_link` with the URL of your XML file. The resulting CSV file will be available for download via the provided link.
+**Использование:**
+- Для обработки XML-файлов используйте веб-интерфейс или отправьте запрос на `/process_link` с URL вашего XML-файла. Полученный CSV-файл будет доступен для скачивания по предоставленной ссылке.
 
-### Process your data in a simple and efficient way with Magic-XML!
+### Обрабатывайте свои данные просто и эффективно с Magic-XML!
