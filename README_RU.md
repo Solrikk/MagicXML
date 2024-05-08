@@ -29,6 +29,34 @@
 - `cosine_similarity` для расчета косинусного сходства.
 - `re` - Модуль для работы с регулярными выражениями.
 
+-----------------
+
+## ⚠️ Getting Started with MagicXML: ⚠️
+
+Welcome to MagicXML, an innovative application designed to process and transform your XML data effortlessly. Whether you're dealing with large datasets, seeking to enhance your data analysis workflow, or needing to automate data processing, MagicXML offers powerful tools and features to meet your needs.
+
+### Prerequisites:
+
+Before you dive into MagicXML, ensure you have the following installed:
+
+- Python (version 3.8 or later) [Download Python](https://www.python.org/downloads/)
+- pip (usually comes with Python installation)
+- An active internet connection for initial setup and downloading dependencies.
+
+### Installation:
+
+Follow these simple steps to get MagicXML up and running on your system:
+
+1. **Clone the Repository:**
+
+   First, clone the MagicXML repository to your local machine using git:
+
+   ```bash
+   git clone https://github.com/Solrikk/MagicXML.git
+   cd MagicXML
+
+-----------------
+
 **Структура приложения:**
 - `Приложение FastAPI`: Инициализирует главное приложение с FastAPI, настраивает маршруты для статических файлов и `движок шаблонов Jinja2`.
 - `Класс LinkData (модель Pydantic)`: Модель для валидации входящих данных, получаемых через `POST-запрос на /process_link`.
