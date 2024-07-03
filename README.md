@@ -2,8 +2,16 @@
   <img src="https://github.com/Solrikk/MagicXML/blob/main/assets/gif/taxi-data-science-graphs-on-pc-screen.gif" width="30%"/>
 </div>
 
-
-<div align="center"> <h3> <a href="https://github.com/Solrikk/MagicXML/blob/main/README.md">⭐English⭐</a> | <a href="https://github.com/Solrikk/MagicXML/blob/main/README_RU.md">Russian</a> | <a href="https://github.com/Solrikk/MagicXML/blob/main/README_GE.md">German</a> | <a href="https://github.com/Solrikk/MagicXML/blob/main/README_JP.md">Japanese</a> | <a href="README_KR.md">Korean</a> | <a href="README_CN.md">Chinese</a> </h3> </div>
+<div align="center"> 
+  <h3>
+    <a href="https://github.com/Solrikk/MagicXML/blob/main/README.md">⭐English⭐</a> | 
+    <a href="https://github.com/Solrikk/MagicXML/blob/main/README_RU.md">Russian</a> | 
+    <a href="https://github.com/Solrikk/MagicXML/blob/main/README_GE.md">German</a> | 
+    <a href="https://github.com/Solrikk/MagicXML/blob/main/README_JP.md">Japanese</a> | 
+    <a href="README_KR.md">Korean</a> | 
+    <a href="README_CN.md">Chinese</a> 
+  </h3> 
+</div>
 
 -----------------
 
@@ -11,24 +19,23 @@
 
 🚀 **_Magic-XML is available at https://xmlmagic.ru_** 🚀
 
-**_Magic-XML_** — is a modern web application developed for the convenient and swift transformation of data from XML files into CSV format. The application leverages the power of FastAPI to ensure high performance in request processing, as well as utilizes machine learning algorithms and natural language processing for efficient analysis and classification of textual information. Magic-XML is ideally suited for data analysts, developers, and anyone who deals with large volumes of XML data and aims at their optimization and simplification of analysis.
+**_Magic-XML_** — is a modern web application developed for the convenient and swift transformation of data from XML files into CSV format. The application leverages the power of **FastAPI** to ensure high performance in request processing, as well as utilizes machine learning algorithms and natural language processing for efficient analysis and classification of textual information. Magic-XML is ideally suited for data analysts, developers, and anyone who deals with large volumes of XML data and aims at their optimization and simplification of analysis.
 
-
-**Dependencies:**
-- `fastapi` - A framework for building APIs with automatic documentation.
-- `uvicorn` - ASGI server for running FastAPI applications.
-- `requests` - Library for making HTTP requests.
-- `xml.etree.ElementTree` - Module for XML processing.
-- `csv` - Module for working with CSV files.
-- `os` - Module for interacting with the operating system, used for creating directories.
-- `Jinja2Templates` from FastAPI for working with Jinja2 templates.
-- `StaticFiles` - For serving static files.
-- `BaseModel` from `pydantic` - For data validation.
-- `FileResponse` for sending files in responses.
-- `spacy` - For natural language processing, used for categorization.
-- `TfidfVectorizer` for text vectorization.
-- `cosine_similarity` for calculating cosine similarity.
-- `re` - Module for working with regular expressions.
+## **Dependencies:**
+- **`fastapi`** - A framework for building APIs with automatic documentation.
+- **`uvicorn`** - ASGI server for running FastAPI applications.
+- **`requests`** - Library for making HTTP requests.
+- **`xml.etree.ElementTree`** - Module for XML processing.
+- **`csv`** - Module for working with CSV files.
+- **`os`** - Module for interacting with the operating system, used for creating directories.
+- **`Jinja2Templates`** from FastAPI for working with Jinja2 templates.
+- **`StaticFiles`** - For serving static files.
+- **`BaseModel`** from `pydantic` - For data validation.
+- **`FileResponse`** for sending files in responses.
+- **`spacy`** - For natural language processing, used for categorization.
+- **`TfidfVectorizer`** for text vectorization.
+- **`cosine_similarity`** for calculating cosine similarity.
+- **`re`** - Module for working with regular expressions.
 
 ## ⚠️ Getting Started with MagicXML: ⚠️
 
@@ -38,9 +45,9 @@ Welcome to MagicXML, an innovative application designed to process and transform
 
 Before you dive into MagicXML, ensure you have the following installed:
 
-- Python (version 3.8 or later) [Download Python](https://www.python.org/downloads/)
-- pip (usually comes with Python installation)
-- An active internet connection for initial setup and downloading dependencies.
+- **🐍 Python (version 3.8 or later)** [Download Python](https://www.python.org/downloads/)
+- **📦 pip** (usually comes with Python installation)
+- **🌐 An active internet connection** for initial setup and downloading dependencies.
 
 ### Installation:
 
@@ -48,33 +55,55 @@ Follow these simple steps to get MagicXML up and running on your system:
 
 1. **Clone the Repository:**
 
-   First, clone the MagicXML repository to your local machine using git:
-
-   ```bash
-   git clone https://github.com/Solrikk/MagicXML.git
-   cd MagicXML
+   **_git clone https://github.com/Solrikk/MagicXML.git_**
 
 -----------------
 
-**Application Structure:**
-- `FastAPI Application`: Initializes the main application with FastAPI, configures the routes for static files and the `Jinja2 templating engine`.
-- `LinkData class (Pydantic model)`: A model for validating incoming data received through a `POST request to /process_link`.
+## **Application Structure:**
+- **`FastAPI Application`**: Initializes the main application with **FastAPI**, configures the routes for static files and the **Jinja2 templating engine**.
+- **`LinkData class (Pydantic model)`**: A model for validating incoming data received through a **POST request to /process_link**.
 
-**Data processing functions:**
-- `Get_category_replacement()`: A function for categorization based on the cosine similarity between vectors.
-- `Load_custom_categories()`: Loading custom categories from a CSV file.
-- `Remove_unwanted_tags()`: Cleaning product descriptions of HTML tags.
-- `Process_link()`: The main function for processing an XML link, extracting, and saving data to a CSV file.
+## **Data processing functions:**
+- **`Get_category_replacement()`**: A function for categorization based on the **cosine similarity** between vectors.
+- **`Load_custom_categories()`**: Loading custom categories from a **CSV** file.
+- **`Remove_unwanted_tags()`**: Cleaning product descriptions of **HTML** tags.
+- **`Process_link()`**: The main function for processing an **XML** link, extracting, and saving data to a **CSV** file.
 
-**FastAPI Routes:**
-- `GET /`: Display the home page through a Jinja2 template.
-- `POST /process_link`: Accepts data for processing the link and generates a CSV file.
-- `GET /download/data_files/{filename}`: Ability to download generated CSV files.
+## **FastAPI Routes:**
+- **`GET /`**: Display the home page through a **Jinja2** template.
+- **`POST /process_link`**: Accepts data for processing the link and generates a **CSV** file.
+- **`GET /download/data_files/{filename}`**: Ability to download generated **CSV** files.
 
 ## _Adapting Categories Using TF-IDF and Cosine Similarity:_ 
-The program employs `TfidfVectorizer` and `cosine similarity` to determine the most suitable custom category for a product based on its original category name obtained from XML. This showcases an interesting approach to the classification or `category mapping` task, where `machine learning methods` are used instead of direct matching to enhance the accuracy and flexibility of the process.
+The program employs **TfidfVectorizer** and **cosine similarity** to determine the most suitable custom category for a product based on its original category name obtained from XML. This showcases an interesting approach to the classification or **category mapping** task, where **machine learning methods** are used instead of direct matching to enhance the accuracy and flexibility of the process.
 
-<img src="https://github.com/Solrikk/MagicXML/blob/main/assets/TF-IDF%20Visualization/TF-IDF%20Visualization.png" width="95%" /> 
+<div align="center">
+  <img src="https://github.com/Solrikk/MagicXML/blob/main/assets/TF-IDF%20Visualization/TF-IDF%20Visualization.png" width="95%" />
+</div>
+
+more info [more info](https://github.com/Solrikk/MagicXML/tree/main/assets/TF-IDF%20Visualization)
+
+**Cosine Similarity** 🔍 is a metric used to determine how similar two entities are irrespective of their size. Mathematically, it measures the cosine of the angle between two vectors projected in a multi-dimensional space. This concept comes from the field of linear algebra and can be applied in various contexts such as data analysis, natural language processing (**NLP**), and information retrieval systems.
+
+> The idea behind **cosine similarity** 🔍 is quite simple. Imagine you have two vectors (arrays of numbers), each representing an entity's features in a multidimensional space. The "angle" between these vectors gives an indication of their similarity. If the angle is 0 degrees, it means the vectors are perfectly aligned, indicating a similarity score of 1, which is the maximum similarity. Conversely, if the angle is 90 degrees, the cosine similarity is 0, indicating no similarity. Angles between 0 and 90 degrees result in a similarity score somewhere between 0 and 1, with a smaller angle yielding a higher score.
+
+<div align="center">
+  <img src="https://github.com/Solrikk/MagicXML/blob/main/assets/Visualization%20Cosine%20Similarity%20Matrix/Visualization%20Cosine%20Similarity%20Matrix.png" width="100%" />
+</div>
+
+more info [more info](https://github.com/Solrikk/MagicXML/tree/main/assets/Visualization%20Cosine%20Similarity%20Matrix)
+
+- **TF** (term frequency) is the ratio of the number of occurrences of a certain word to the total number of words in the document.
+
+<div align="center">
+  <img src="https://wikimedia.org/api/rest_v1/media/math/render/svg/8ef207eb03f6e9b6f71e73739f45b5179b4f17cc" width="15%" />
+</div>
+
+- **IDF** (Inverse Document Frequency) - the inversion of the frequency with which a certain word appears in the documents of a collection. Karen Spärck Jones is the founder of this concept. Taking into account IDF reduces the weight of commonly used words. For each unique word within a specific collection of documents, there is only one IDF value.
+
+<div align="center">
+  <img src="https://wikimedia.org/api/rest_v1/media/math/render/svg/b88834044365dea6aedba224eabe7147d4d328ef" width="30%" />
+</div>
 
 more info[[created](https://github.com/Solrikk/MagicXML/tree/main/assets/TF-IDF%20Visualization)]
 
