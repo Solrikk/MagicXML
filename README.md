@@ -50,6 +50,9 @@ curl -X 'POST' \
 ```
 Replace **YOUR_XML_URL** with the actual URL of the XML data you want to process. This request will save the response in a file named process_response.json.
 
+![image](https://github.com/user-attachments/assets/d9a32e6e-55c8-4ad7-8ade-b77d4a0d6f45)
+
+
 ## Installation
 
 1. Clone the repository:
