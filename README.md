@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="https://github.com/Solrikk/MagicXML/blob/main/assets/gif/taxi-data-science-graphs-on-pc-screen.gif" width="30%"/>
+  <img src="https://github.com/Solrikk/MagicXML/blob/main/assets/images/market.png" width="70%"/>
 </div>
 
 <div align="center"> 
