@@ -43,7 +43,7 @@ To use the API, you can send a `POST` request to the `/process_link` endpoint wi
 
 ```sh
 curl -X 'POST' \
-  'http://127.0.0.1:8000/process_link' \
+  'https://solarxml.replit.app//process_link' \
   -H 'Content-Type: application/json' \
   -d '{"link_url": "YOUR_XML_URL", "preset_id": "id=1234"}' \
   -o process_response.json
