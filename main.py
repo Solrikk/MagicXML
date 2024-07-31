@@ -10,7 +10,6 @@ import csv
 import os
 import aiohttp
 import asyncio
-import aiofiles
 
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
@@ -19,6 +18,7 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 
 class LinkData(BaseModel):
   link_url: str
+  return_url: str = ""
   preset_id: str = ""
 
 
@@ -30,26 +30,24 @@ def remove_unwanted_tags(description):
   return description
 
 
-async def fetch_url_in_chunks(link_url, chunk_size=1024):
+async def fetch_url(link_url):
   async with aiohttp.ClientSession() as session:
     async with session.get(link_url) as response:
-      buffer = b''
-      while True:
-        chunk = await response.content.read(chunk_size)
-        if not chunk:
-          if buffer:
-            yield buffer
-          break
+      response.raise_for_status()
+      return await response.text()
 
-        buffer += chunk
-        try:
-          decoded_data = buffer.decode('utf-8')
-          yield decoded_data.encode('utf-8')
-          buffer = b''
-        except UnicodeDecodeError as e:
-          incomplete_bytes = e.start
-          yield buffer[:incomplete_bytes].decode('utf-8').encode('utf-8')
-          buffer = buffer[incomplete_bytes:]
+
+async def split_xml(xml_data, chunk_size):
+  root = ET.fromstring(xml_data)
+  offers = root.findall('.//offer')
+
+  for i in range(0, len(offers), chunk_size):
+    chunked_offers = offers[i:i + chunk_size]
+    chunk_root = ET.Element(root.tag, root.attrib)
+    shop = ET.SubElement(chunk_root, 'shop')
+    for offer in chunked_offers:
+      shop.append(offer)
+    yield ET.tostring(chunk_root, encoding='unicode', method='xml')
 
 
 async def process_offer(offer_elem, build_category_path):
@@ -91,9 +89,62 @@ async def process_offer(offer_elem, build_category_path):
   return offer_data
 
 
-async def process_link_stream(link_url, chunk_size=1024):
+async def process_chunk(xml_chunk):
   try:
-    category_names = set()
+    root = ET.fromstring(xml_chunk)
+
+    categories = {}
+    category_parents = {}
+    for category in root.findall('.//category'):
+      category_id = category.get('id')
+      parent_id = category.get('parentId')
+      categories[
+          category_id] = category.text if category.text is not None else 'Undefined'
+      if parent_id:
+        category_parents[category_id] = parent_id
+
+    def build_category_path(category_id):
+      path = []
+      while category_id:
+        path.append(categories.get(category_id, 'Undefined'))
+        category_id = category_parents.get(category_id)
+      return '///'.join(reversed(path))
+
+    offers = []
+    for offer_elem in root.findall('.//offer'):
+      offer_data = await process_offer(offer_elem, build_category_path)
+      offers.append(offer_data)
+
+    return {
+        "offers": offers,
+        "categories": categories,
+        "category_parents": category_parents
+    }
+  except Exception as e:
+    print(f"Произошла ошибка при обработке фрагмента: {str(e)}")
+    return None
+
+
+async def process_link(link_url):
+  try:
+    xml_data = await fetch_url(link_url)
+
+    chunk_size = 100
+    tasks = []
+
+    async for chunk in split_xml(xml_data, chunk_size):
+      task = process_chunk(chunk)
+      tasks.append(task)
+
+    results = await asyncio.gather(*tasks)
+
+    combined_data = {"offers": [], "categories": {}, "category_parents": {}}
+    for result in results:
+      if result:
+        combined_data["offers"].extend(result["offers"])
+        combined_data["categories"].update(result["categories"])
+        combined_data["category_parents"].update(result["category_parents"])
+
     save_path = "data_files"
     os.makedirs(save_path, exist_ok=True)
     domain_name = urlparse(link_url).netloc.replace("www.", "")
@@ -101,57 +152,22 @@ async def process_link_stream(link_url, chunk_size=1024):
     unique_filename = f"{safe_filename}.csv"
     file_path = os.path.join(save_path, unique_filename)
 
-    async with aiofiles.open(file_path, 'w', newline='',
-                             encoding='utf-8-sig') as file:
-      writer = None
+    category_names = set()
+    for row in combined_data["offers"]:
+      category_names.update(row.keys())
 
-      async for chunk in fetch_url_in_chunks(link_url, chunk_size):
-        chunk_data = chunk.decode('utf-8')
-        try:
-          root = ET.fromstring(chunk_data)
-        except ET.ParseError as e:
-          print(f"Ошибка при парсинге XML: {e}. Данные chunk: {chunk_data}")
-          continue
+    with open(file_path, 'w', newline='', encoding='utf-8-sig') as file:
+      writer = csv.DictWriter(file,
+                              fieldnames=sorted(category_names),
+                              delimiter=';')
+      writer.writeheader()
+      writer.writerows(combined_data["offers"])
 
-        categories = {}
-        category_parents = {}
-        for category in root.findall('.//category'):
-          category_id = category.get('id')
-          parent_id = category.get('parentId')
-          categories[
-              category_id] = category.text if category.text is not None else 'Undefined'
-          if parent_id:
-            category_parents[category_id] = parent_id
-
-        def build_category_path(category_id):
-          path = []
-          while category_id:
-            path.append(categories.get(category_id, 'Undefined'))
-            category_id = category_parents.get(category_id)
-          return '///'.join(reversed(path))
-
-        tasks = [
-            process_offer(offer_elem, build_category_path)
-            for offer_elem in root.findall('.//offer')
-        ]
-        data = await asyncio.gather(*tasks)
-
-        if writer is None:
-          for row in data:
-            category_names.update(row.keys())
-          writer = csv.DictWriter(file,
-                                  fieldnames=sorted(category_names),
-                                  delimiter=';')
-          await file.write(
-              writer.writerow(dict((fn, fn) for fn in writer.fieldnames)))
-
-        for row in data:
-          await file.write(writer.writerow(row))
-
+    print(f"Файл сохранен: {file_path}")
+    return file_path
   except Exception as e:
     print(f"Произошла ошибка: {str(e)}")
     return None
-  return file_path
 
 
 @app.get("/")
@@ -163,10 +179,11 @@ def read_index(request: Request):
 async def process_link_post(link_data: LinkData):
   link_url = link_data.link_url
   preset_id = link_data.preset_id
-  result = await process_link_stream(link_url)
+  result = await process_link(link_url)
   if result:
     downloaded_file_name = os.path.basename(result)
     file_url = f"https://solarxml.replit.app/download/data_files/{downloaded_file_name}"
+
     print(f"Файл создан и доступен по URL: {file_url}")
     return {"file_url": file_url, "preset_id": preset_id}
   else:
