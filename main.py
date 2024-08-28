@@ -4,16 +4,26 @@ from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
 import xml.etree.ElementTree as ET
 import re
 import csv
 import os
 import aiohttp
 import asyncio
+import chardet
 
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
 app.mount("/static", StaticFiles(directory="static"), name="static")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 class LinkData(BaseModel):
@@ -34,7 +44,9 @@ async def fetch_url(link_url):
   async with aiohttp.ClientSession() as session:
     async with session.get(link_url) as response:
       response.raise_for_status()
-      return await response.text()
+      raw_data = await response.read()
+      detected_encoding = chardet.detect(raw_data)['encoding']
+      return raw_data.decode(detected_encoding)
 
 
 async def split_xml(xml_data, chunk_size):
@@ -121,7 +133,7 @@ async def process_chunk(xml_chunk):
         "category_parents": category_parents
     }
   except Exception as e:
-    print(f"Произошла ошибка при обработке фрагмента: {str(e)}")
+    print(f"An error occurred while processing the fragment: {str(e)}")
     return None
 
 
@@ -161,12 +173,17 @@ async def process_link(link_url):
                               fieldnames=sorted(category_names),
                               delimiter=';')
       writer.writeheader()
-      writer.writerows(combined_data["offers"])
+      for offer in combined_data["offers"]:
+        for key, value in offer.items():
+          if isinstance(value, str):
+            offer[key] = value.encode('utf-8',
+                                      errors='replace').decode('utf-8')
+        writer.writerow(offer)
 
-    print(f"Файл сохранен: {file_path}")
+    print(f"File saved: {file_path}")
     return file_path
   except Exception as e:
-    print(f"Произошла ошибка: {str(e)}")
+    print(f"An error occurred: {str(e)}")
     return None
 
 
@@ -176,30 +193,56 @@ def read_index(request: Request):
 
 
 @app.post("/process_link")
-async def process_link_post(link_data: LinkData):
+async def process_link_post(link_data: LinkData, request: Request):
   link_url = link_data.link_url
   preset_id = link_data.preset_id
+  return_url = link_data.return_url
+
   result = await process_link(link_url)
+
   if result:
     downloaded_file_name = os.path.basename(result)
     file_url = f"https://solarxml.replit.app/download/data_files/{downloaded_file_name}"
+    response_data = {
+        "file_url": file_url,
+        "preset_id": preset_id,
+        "status": "completed"
+    }
 
-    print(f"Файл создан и доступен по URL: {file_url}")
-    return {"file_url": file_url, "preset_id": preset_id}
+    if return_url:
+      try:
+        async with aiohttp.ClientSession() as session:
+          async with session.post(return_url,
+                                  json=response_data) as callback_response:
+            callback_response.raise_for_status()
+      except Exception as e:
+        print(f"An error occurred during the callback: {str(e)}")
+
+    print(f"File created and available at URL: {file_url}")
+    return response_data
   else:
     raise HTTPException(status_code=500,
-                        detail="Во время обработки ссылки произошла ошибка")
+                        detail="An error occurred while processing the link")
+
+
+@app.get("/status/{preset_id}")
+async def check_processing_status(preset_id: str):
+  return {
+      "status": "completed",
+      "file_url":
+      "https://solarxml.replit.app/download/data_files/condihol_ru.csv"
+  }
 
 
 @app.get("/download/data_files/{filename}")
 async def download_csv(filename: str):
   file_path = os.path.join("data_files", filename)
-  print(f"Попытка загрузки файла: {file_path}")
+  print(f"Attempting to download file: {file_path}")
   if os.path.isfile(file_path):
-    print("Файл найден, начинаю загрузку.")
+    print("File found, starting download.")
     return FileResponse(path=file_path,
                         filename=filename,
                         media_type='application/octet-stream')
   else:
-    print("Файл не найден.")
-    raise HTTPException(status_code=404, detail="Файл не найден.")
+    print("File not found.")
+    raise HTTPException(status_code=404, detail="File not found.")
