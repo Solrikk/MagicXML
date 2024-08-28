@@ -113,7 +113,7 @@ Renders the index page with instructions or UI for interacting with the service.
 - `process_offer(offer_elem, build_category_path)`: Processes individual XML elements to extract offer data.
 - `process_link_stream(link_url, chunk_size=1024)`: Processes the XML data stream from the URL, parses it, and writes it to a CSV file.
 
-🛡️ Security
+# 🛡️ Security
 - CORS is enabled for all origins (). This can be restricted as needed.*
 - Ensure to handle any sensitive data appropriately and restrict access to certain endpoints if necessary.
 
