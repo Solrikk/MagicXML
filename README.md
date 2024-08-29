@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="https://github.com/Solrikk/MagicXML/blob/main/assets/images/photo_2024-08-29_01-19-16.jpg" width="70%"/>
+  <img src="https://github.com/Solrikk/MagicXML/blob/main/assets/images/20b06e172642ddf80aae910c422db7dd.png" width="70%"/>
 </div>
 
 <div align="center"> 
