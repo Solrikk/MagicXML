@@ -23,11 +23,14 @@
 
 ## 🚀 Features
 
--  **Asynchronous processing:** Efficiently fetches and processes XML data in chunks using asyncio and aiohttp.
--  **Customizable XML Parsing:** Handles specific XML structures, extracting and cleaning data as required.
--  **CSV Export**: Converts XML data into well-structured CSV files, accommodating various encoding standards.
--  **REST API Interface**: Simple API endpoints to trigger the processing and retrieval of files.
--  **Error Handling**: Robust error management ensures that issues during XML processing are captured and reported.
+- **Asynchronous Processing**: Efficiently fetches and processes XML data in chunks using `asyncio` and `aiohttp`, ensuring scalability and high performance.
+- **Customizable XML Parsing**: Tailored to handle specific XML structures, extracting and cleaning data as required.
+- **Data Cleaning and Sanitization**: Removes unwanted HTML tags and special characters from descriptions and names to ensure data integrity.
+- **CSV Export**: Converts processed XML data into well-structured CSV files, supporting various encoding standards.
+- **REST API Interface**: Provides simple API endpoints to trigger processing and retrieve files programmatically.
+- **Error Handling**: Implements robust error management to capture and report issues during XML processing.
+- **CORS Support**: Allows requests from any origin, facilitating integration with other services and applications.
+- **Processing Status Tracking**: Enables users to check the status of their processing tasks using a `preset_id`.
 
 ## 🛠️ Installation
 
@@ -63,59 +66,3 @@ cd MagicXML
 ## Install Dependencies
 You can install the required dependencies using pip:
 ```pip install -r requirements.txt```
-
-## 📄 API Endpoints
-
-### `GET /`
-
-Renders the index page with instructions or UI for interacting with the service.
-
-- **Description**: Renders the index page.
-- **Response**: HTML page.
-
-### `POST /process_link`
-
-- **Description**: Processes the given link to fetch, parse, and save XML data into a CSV file.
-- **Request Body**:
-    - `link_url` (str): The URL to fetch the XML data from.
-    - `preset_id` (str, optional): An optional preset ID.
-- **Response**: JSON containing the URL of the generated CSV file and the preset ID.
-
-### `GET /download/data_files/{filename}`
-
-- **Description**: Downloads the specified CSV file.
-- **Path Parameter**:
-    - `filename` (str): The name of the CSV file to download.
-- **Response**: The requested CSV file.
-
-## Directory Structure
-
-- `main.py`: The main application file.
-- `templates/`: Directory containing HTML templates.
-- `static/`: Directory containing static files (CSS, JS, images).
-- `data_files/`: Directory where the generated CSV files are saved.
-
-## Code Explanation
-
-### `main.py`
-
-- **Imports**: Various libraries and modules for HTTP handling, asynchronous operations, file handling, and XML parsing.
-- **FastAPI Setup**: Initializes the FastAPI app, sets up Jinja2 templates, and mounts the static files directory.
-- **Data Models**: Defines the `LinkData` model using Pydantic for request validation.
-- **Utility Functions**: Includes functions for removing unwanted HTML tags from descriptions and fetching URL data in chunks.
-- **Processing Functions**: Contains asynchronous functions to process XML data, parse it, and save it into CSV files.
-- **API Endpoints**: Defines endpoints for the root page, processing links, and downloading CSV files.
-
-### Utility Functions
-
-- `remove_unwanted_tags(description)`: Removes HTML tags from a given description string.
-- `fetch_url_in_chunks(link_url, chunk_size=1024)`: Fetches data from a URL in chunks and yields the data.
-- `process_offer(offer_elem, build_category_path)`: Processes individual XML elements to extract offer data.
-- `process_link_stream(link_url, chunk_size=1024)`: Processes the XML data stream from the URL, parses it, and writes it to a CSV file.
-
-# 🛡️ Security
-- CORS is enabled for all origins (). This can be restricted as needed.*
-- Ensure to handle any sensitive data appropriately and restrict access to certain endpoints if necessary.
-
-# 🧙‍♂️ About
-MagicXML is maintained by Solrikk. If you have any questions or need further assistance, please feel free to reach out.
