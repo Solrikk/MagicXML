@@ -19,7 +19,7 @@
 
 ## Overview
 
-**MagicXML** is a FastAPI-based service designed to fetch, process, and convert XML data into structured CSV files. It is optimized for handling large XML files by processing them in chunks asynchronously, making it suitable for heavy data processing tasks.
+**MagicXML** is a web application built with FastAPI that allows users to submit URLs pointing to XML files, processes the content, and converts the data into CSV format. The application supports asynchronous processing, ensuring high performance when handling large volumes of data.
 
 ## 🚀 Features
 
