@@ -25,15 +25,17 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 class LinkData(BaseModel):
     link_url: str
     return_url: str = ""
     preset_id: str = ""
 
+
 def clean_description(description):
     if not description:
         return ''
-    soup = BeautifulSoup(description, 'lxml')
+    soup = BeautifulSoup(description, 'html5lib')
     allowed_tags = ['p', 'br']
     for tag in soup.find_all(True):
         if tag.name not in allowed_tags:
@@ -46,12 +48,14 @@ def clean_description(description):
                 content.replace_with(new_p)
     return str(soup)
 
+
 def sanitize_name(name):
     if not name:
         return ''
     sanitized = name.replace('⌀', '')
     sanitized = re.sub(r'[^\w\s.,-]', '', sanitized)
     return sanitized
+
 
 async def fetch_url(link_url):
     async with aiohttp.ClientSession() as session:
@@ -60,7 +64,7 @@ async def fetch_url(link_url):
             raw_data = await response.read()
             return raw_data.decode('utf-8')
 
-# Обновлённая функция split_offers для поддержки двух форматов
+
 async def split_offers(xml_data, chunk_size, format_type):
     root = ET.fromstring(xml_data)
     if format_type == 'offer':
@@ -72,26 +76,43 @@ async def split_offers(xml_data, chunk_size, format_type):
     for i in range(0, len(offers), chunk_size):
         yield offers[i:i + chunk_size]
 
-# Обновлённая функция process_offer для поддержки двух форматов и разделения характеристик
-async def process_offer(offer_elem, build_category_path, format_type):
-    # Определение ID предложения
-    if format_type == 'offer':
-        offer_id = offer_elem.get('id', '0')
-    elif format_type == 'product':
-        offer_id = offer_elem.findtext('.//sku', default='0')
-    offer_data = {'id': offer_id}
 
-    # Обработка пути категории
+async def process_offer(offer_elem, build_category_path, format_type):
+    offer_data = {}
+    
+    # Get all attributes of the root element
+    for key, value in offer_elem.attrib.items():
+        offer_data[f"attr_{key}"] = value
+    
+    # Process all child elements
+    for elem in offer_elem.iter():
+        # Skip the root element
+        if elem == offer_elem:
+            continue
+            
+        # Get element attributes
+        for key, value in elem.attrib.items():
+            column_name = f"{elem.tag}_{key}"
+            if column_name in offer_data:
+                offer_data[column_name] += f"///{value}"
+            else:
+                offer_data[column_name] = value
+                
+        # Get element text
+        if elem.text and elem.text.strip():
+            if elem.tag in offer_data:
+                offer_data[elem.tag] += f"///{elem.text.strip()}"
+            else:
+                offer_data[elem.tag] = elem.text.strip()
+
     if format_type == 'offer':
         category_id_elem = offer_elem.find('.//categoryId')
         category_id = category_id_elem.text if category_id_elem is not None else 'Undefined'
         category_path = build_category_path(category_id)
         offer_data['category_path'] = category_path
     elif format_type == 'product':
-        # В новом формате категорий нет, используем 'Undefined'
         offer_data['category_path'] = 'Undefined'
 
-    # Обработка основных тегов, исключая специальные разделы
     for category_elem in offer_elem:
         if format_type == 'offer':
             excluded_tags = ['picture', 'param', 'description']
@@ -109,11 +130,10 @@ async def process_offer(offer_elem, build_category_path, format_type):
                 category_value = sanitize_name(category_value)
             offer_data[category_name] = category_value or ""
 
-    # Обработка фотографий
     if format_type == 'offer':
         picture_elems = offer_elem.findall('.//picture')
     elif format_type == 'product':
-        picture_elems = offer_elem.findall('.//photo')  # Новая структура
+        picture_elems = offer_elem.findall('.//photo')
     pictures = "///".join([
         picture_elem.text if picture_elem.text is not None else ""
         for picture_elem in picture_elems
@@ -121,7 +141,6 @@ async def process_offer(offer_elem, build_category_path, format_type):
     if pictures:
         offer_data['pictures'] = pictures
 
-    # Обработка параметров
     if format_type == 'offer':
         param_elems = offer_elem.findall('.//param')
         params = {}
@@ -133,14 +152,13 @@ async def process_offer(offer_elem, build_category_path, format_type):
             else:
                 params[key] = value
     elif format_type == 'product':
-        # Обработка параметров из <fabric>
         fabric_elem = offer_elem.find('.//fabric')
-        param_elems_fabric = fabric_elem.findall('.//feature') if fabric_elem is not None else []
-        # Обработка параметров из <features>
+        param_elems_fabric = fabric_elem.findall(
+            './/feature') if fabric_elem is not None else []
         features_elem = offer_elem.find('.//features')
-        param_elems_features = features_elem.findall('.//feature') if features_elem is not None else []
+        param_elems_features = features_elem.findall(
+            './/feature') if features_elem is not None else []
         params = {}
-        # Обработка характеристик ткани
         for param_elem in param_elems_fabric:
             key = f"fabric_{param_elem.get('name')}"
             value = param_elem.text or ""
@@ -148,7 +166,6 @@ async def process_offer(offer_elem, build_category_path, format_type):
                 params[key] += f", {value}"
             else:
                 params[key] = value
-        # Обработка характеристик товара
         for param_elem in param_elems_features:
             key = f"feature_{param_elem.get('name')}"
             value = param_elem.text or ""
@@ -158,11 +175,9 @@ async def process_offer(offer_elem, build_category_path, format_type):
                 params[key] = value
     offer_data.update(params)
 
-    # Обработка описания
     if format_type == 'offer':
         description_elem = offer_elem.find('.//description')
     elif format_type == 'product':
-        # В предоставленном XML отсутствует <description>, используем <name> как описание
         description_elem = offer_elem.find('.//name')
     if description_elem is not None and description_elem.text:
         cleaned_description = clean_description(description_elem.text)
@@ -170,20 +185,21 @@ async def process_offer(offer_elem, build_category_path, format_type):
 
     return offer_data
 
-# Обновлённая функция process_offers_chunk для передачи типа формата
+
 async def process_offers_chunk(offers_chunk, build_category_path, format_type):
     offers = []
     for offer_elem in offers_chunk:
-        offer_data = await process_offer(offer_elem, build_category_path, format_type)
+        offer_data = await process_offer(offer_elem, build_category_path,
+                                         format_type)
         offers.append(offer_data)
     return {"offers": offers}
+
 
 async def process_link(link_url, base_url):
     try:
         xml_data = await fetch_url(link_url)
         root = ET.fromstring(xml_data)
 
-        # Определение формата XML
         if root.findall('.//offer'):
             format_type = 'offer'
         elif root.findall('.//product'):
@@ -197,7 +213,8 @@ async def process_link(link_url, base_url):
             for category in root.findall('.//category'):
                 category_id = category.get('id')
                 parent_id = category.get('parentId')
-                categories[category_id] = category.text if category.text else 'Undefined'
+                categories[
+                    category_id] = category.text if category.text else 'Undefined'
                 if parent_id:
                     category_parents[category_id] = parent_id
 
@@ -208,18 +225,23 @@ async def process_link(link_url, base_url):
                     category_id = category_parents.get(category_id)
                 return '///'.join(reversed(path))
         elif format_type == 'product':
-            # В новом формате категорий нет или они представлены иначе
+
             def build_category_path(category_id):
                 return 'Undefined'
 
-        # Обработка предложений в зависимости от формата
         offers_generator = split_offers(xml_data, 100, format_type)
         tasks = []
         async for offers_chunk in offers_generator:
-            task = asyncio.create_task(process_offers_chunk(offers_chunk, build_category_path, format_type))
+            task = asyncio.create_task(
+                process_offers_chunk(offers_chunk, build_category_path,
+                                     format_type))
             tasks.append(task)
         results = await asyncio.gather(*tasks)
-        combined_data = {"offers": [], "categories": categories, "category_parents": category_parents}
+        combined_data = {
+            "offers": [],
+            "categories": categories,
+            "category_parents": category_parents
+        }
         for result in results:
             if result:
                 combined_data["offers"].extend(result["offers"])
@@ -240,7 +262,8 @@ async def process_link(link_url, base_url):
             for offer in combined_data["offers"]:
                 for key, value in offer.items():
                     if isinstance(value, str):
-                        offer[key] = value.replace('"', '""').replace('\n', ' ').replace('\r', ' ')
+                        offer[key] = value.replace('"', '""').replace(
+                            '\n', ' ').replace('\r', ' ')
                 writer.writerow(offer)
         print(f"File saved: {file_path}")
         file_url = f"{base_url}/download/data_files/{unique_filename}"
@@ -249,9 +272,11 @@ async def process_link(link_url, base_url):
         print(f"An error occurred: {str(e)}")
         return None, None
 
+
 @app.get("/")
 def read_index(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
+
 
 @app.post("/process_link")
 async def process_link_post(link_data: LinkData, request: Request):
@@ -269,24 +294,27 @@ async def process_link_post(link_data: LinkData, request: Request):
         if return_url:
             try:
                 async with aiohttp.ClientSession() as session:
-                    async with session.post(return_url,
-                                            json=response_data) as callback_response:
+                    async with session.post(
+                            return_url,
+                            json=response_data) as callback_response:
                         callback_response.raise_for_status()
             except Exception as e:
                 print(f"An error occurred during the callback: {str(e)}")
         print(f"File created and available at URL: {file_url}")
         return response_data
     else:
-        raise HTTPException(status_code=500,
-                            detail="An error occurred while processing the link")
+        raise HTTPException(
+            status_code=500,
+            detail="An error occurred while processing the link")
+
 
 @app.get("/status/{preset_id}")
 async def check_processing_status(preset_id: str):
     return {
         "status": "completed",
-        "file_url":
-        "http://localhost:8000/download/data_files/your_file.csv"
+        "file_url": "http://localhost:8000/download/data_files/your_file.csv"
     }
+
 
 @app.get("/download/data_files/{filename}")
 async def download_csv(filename: str):
@@ -300,6 +328,7 @@ async def download_csv(filename: str):
     else:
         print("File not found.")
         raise HTTPException(status_code=404, detail="File not found.")
+
 
 if __name__ == "__main__":
     import uvicorn
