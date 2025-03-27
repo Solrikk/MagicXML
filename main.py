@@ -57,12 +57,81 @@ def sanitize_name(name):
     return sanitized
 
 
-async def fetch_url(link_url):
-    async with aiohttp.ClientSession() as session:
-        async with session.get(link_url) as response:
-            response.raise_for_status()
-            raw_data = await response.read()
-            return raw_data.decode('utf-8')
+async def fetch_url(link_url, max_retries=3):
+    headers = {
+        'User-Agent':
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+        'Accept':
+        'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.5',
+        'Connection': 'keep-alive',
+        'Cache-Control': 'max-age=0'
+    }
+
+    for attempt in range(max_retries):
+        try:
+            print(
+                f"Fetching URL (attempt {attempt+1}/{max_retries}): {link_url}"
+            )
+            async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(
+                    total=90)) as session:
+                async with session.get(link_url,
+                                       headers=headers,
+                                       allow_redirects=True) as response:
+                    if response.status >= 400:
+                        print(
+                            f"HTTP error: {response.status} - {response.reason}"
+                        )
+                        if attempt == max_retries - 1:
+                            response.raise_for_status()
+                        continue
+
+                    raw_data = await response.read()
+
+                    content_type = response.headers.get('Content-Type', '')
+                    print(f"Content-Type: {content_type}")
+
+                    if not raw_data:
+                        print(
+                            f"Empty response received on attempt {attempt+1}")
+                        if attempt == max_retries - 1:
+                            raise ValueError(
+                                f"Empty response received from {link_url} after {max_retries} attempts"
+                            )
+                        await asyncio.sleep(2)
+                        continue
+
+                    try:
+                        return raw_data.decode('utf-8')
+                    except UnicodeDecodeError:
+                        encodings = [
+                            'windows-1251', 'latin1', 'iso-8859-1', 'cp1252'
+                        ]
+                        for encoding in encodings:
+                            try:
+                                return raw_data.decode(encoding)
+                            except UnicodeDecodeError:
+                                continue
+                        return raw_data.decode('utf-8', errors='replace')
+
+        except aiohttp.ClientError as e:
+            print(f"ClientError on attempt {attempt+1}: {str(e)}")
+            if attempt == max_retries - 1:
+                raise ValueError(
+                    f"Failed to fetch URL after {max_retries} attempts: {str(e)}"
+                )
+            await asyncio.sleep(2)
+
+        except Exception as e:
+            print(f"Exception on attempt {attempt+1}: {str(e)}")
+            if attempt == max_retries - 1:
+                raise ValueError(
+                    f"Error fetching URL after {max_retries} attempts: {str(e)}"
+                )
+            await asyncio.sleep(2)
+
+    raise ValueError(
+        f"Failed to fetch URL {link_url} after {max_retries} attempts")
 
 
 async def split_offers(xml_data, chunk_size, format_type):
@@ -79,26 +148,21 @@ async def split_offers(xml_data, chunk_size, format_type):
 
 async def process_offer(offer_elem, build_category_path, format_type):
     offer_data = {}
-    
-    # Get all attributes of the root element
+
     for key, value in offer_elem.attrib.items():
         offer_data[f"attr_{key}"] = value
-    
-    # Process all child elements
+
     for elem in offer_elem.iter():
-        # Skip the root element
         if elem == offer_elem:
             continue
-            
-        # Get element attributes
+
         for key, value in elem.attrib.items():
             column_name = f"{elem.tag}_{key}"
             if column_name in offer_data:
                 offer_data[column_name] += f"///{value}"
             else:
                 offer_data[column_name] = value
-                
-        # Get element text
+
         if elem.text and elem.text.strip():
             if elem.tag in offer_data:
                 offer_data[elem.tag] += f"///{elem.text.strip()}"
@@ -197,8 +261,48 @@ async def process_offers_chunk(offers_chunk, build_category_path, format_type):
 
 async def process_link(link_url, base_url):
     try:
-        xml_data = await fetch_url(link_url)
-        root = ET.fromstring(xml_data)
+        data = await fetch_url(link_url)
+
+        if not data or not data.strip():
+            raise ValueError("Received empty data from the URL")
+
+        is_yml = link_url.lower().endswith(
+            '.yml') or link_url.lower().endswith('.yaml')
+
+        if is_yml:
+            import yaml
+            try:
+                if data.strip().startswith('<?xml') or data.strip().startswith(
+                        '<yml_catalog'):
+                    xml_data = data
+                else:
+                    data_fixed = data.replace('\t', '    ')
+                    yml_data = yaml.safe_load(data_fixed)
+                    import dicttoxml
+                    xml_data = dicttoxml.dicttoxml(
+                        yml_data, custom_root='yml_catalog',
+                        attr_type=False).decode('utf-8')
+            except Exception as e:
+                print(f"Error converting YML to XML: {str(e)}")
+                try:
+                    ET.fromstring(data)
+                    xml_data = data
+                    print("Successfully parsed as XML directly")
+                except Exception as xml_e:
+                    print(f"Also failed to parse as XML: {str(xml_e)}")
+                    raise ValueError(
+                        f"Failed to parse YML/XML format: {str(e)}")
+        else:
+            xml_data = data
+
+        if not xml_data or not xml_data.strip():
+            raise ValueError("Empty XML data after processing")
+
+        try:
+            root = ET.fromstring(xml_data)
+        except ET.ParseError as pe:
+            print(f"XML parsing error: {str(pe)}")
+            raise ValueError(f"Invalid XML format: {str(pe)}")
 
         if root.findall('.//offer'):
             format_type = 'offer'
@@ -266,7 +370,7 @@ async def process_link(link_url, base_url):
                             '\n', ' ').replace('\r', ' ')
                 writer.writerow(offer)
         print(f"File saved: {file_path}")
-        file_url = f"{base_url}/download/data_files/{unique_filename}"
+        file_url = f"https://magic-xml.replit.app/download/data_files/{unique_filename}"
         return file_path, file_url
     except Exception as e:
         print(f"An error occurred: {str(e)}")
@@ -284,35 +388,46 @@ async def process_link_post(link_data: LinkData, request: Request):
     preset_id = link_data.preset_id
     return_url = link_data.return_url
     base_url = str(request.url).rstrip(request.url.path)
-    result_path, file_url = await process_link(link_url, base_url)
-    if result_path and file_url:
-        response_data = {
-            "file_url": file_url,
-            "preset_id": preset_id,
-            "status": "completed"
-        }
-        if return_url:
-            try:
-                async with aiohttp.ClientSession() as session:
-                    async with session.post(
-                            return_url,
-                            json=response_data) as callback_response:
-                        callback_response.raise_for_status()
-            except Exception as e:
-                print(f"An error occurred during the callback: {str(e)}")
-        print(f"File created and available at URL: {file_url}")
-        return response_data
-    else:
-        raise HTTPException(
-            status_code=500,
-            detail="An error occurred while processing the link")
+
+    try:
+        result_path, file_url = await process_link(link_url, base_url)
+        if result_path and file_url:
+            response_data = {
+                "file_url": file_url,
+                "preset_id": preset_id,
+                "status": "completed"
+            }
+            if return_url:
+                try:
+                    async with aiohttp.ClientSession() as session:
+                        async with session.post(
+                                return_url,
+                                json=response_data) as callback_response:
+                            callback_response.raise_for_status()
+                except Exception as e:
+                    print(f"An error occurred during the callback: {str(e)}")
+            print(f"File created and available at URL: {file_url}")
+            return response_data
+        else:
+            error_detail = "Failed to process the link. Please check the URL and try again."
+            raise HTTPException(status_code=500, detail=error_detail)
+    except ValueError as ve:
+        error_message = str(ve)
+        print(f"ValueError during processing: {error_message}")
+        raise HTTPException(status_code=500, detail=error_message)
+    except Exception as e:
+        error_message = f"An unexpected error occurred: {str(e)}"
+        print(error_message)
+        raise HTTPException(status_code=500, detail=error_message)
 
 
 @app.get("/status/{preset_id}")
 async def check_processing_status(preset_id: str):
     return {
-        "status": "completed",
-        "file_url": "http://localhost:8000/download/data_files/your_file.csv"
+        "status":
+        "completed",
+        "file_url":
+        "https://magic-xml.replit.app/download/data_files/your_file.csv"
     }
 
 
@@ -332,4 +447,4 @@ async def download_csv(filename: str):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
+    uvicorn.run("main:app", host="localhost", port=8080, reload=True)
