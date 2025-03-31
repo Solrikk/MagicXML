@@ -169,7 +169,25 @@ async def process_offer(offer_elem, build_category_path, format_type):
             else:
                 offer_data[elem.tag] = elem.text.strip()
 
+    # Обработка delivery-options
     if format_type == 'offer':
+        delivery_options_elem = offer_elem.find('.//delivery-options')
+        if delivery_options_elem is not None:
+            delivery_options = []
+            for option in delivery_options_elem.findall('.//option'):
+                option_data = {}
+                for key, value in option.attrib.items():
+                    option_data[key] = value
+                delivery_options.append(option_data)
+            
+            if delivery_options:
+                # Преобразуем данные о доставке в строковый формат для CSV
+                delivery_str = "|||".join([
+                    "|".join([f"{k}={v}" for k, v in option.items()])
+                    for option in delivery_options
+                ])
+                offer_data['delivery_options'] = delivery_str
+
         category_id_elem = offer_elem.find('.//categoryId')
         category_id = category_id_elem.text if category_id_elem is not None else 'Undefined'
         category_path = build_category_path(category_id)
@@ -192,6 +210,9 @@ async def process_offer(offer_elem, build_category_path, format_type):
                 category_value = category_value.replace('.', ',')
             if category_name == 'name':
                 category_value = sanitize_name(category_value)
+            # Очистка размеров от вопросительных знаков
+            if category_name == 'Размер' and category_value and '?' in category_value:
+                category_value = category_value.replace('?', '').strip()
             offer_data[category_name] = category_value or ""
 
     if format_type == 'offer':
@@ -211,6 +232,14 @@ async def process_offer(offer_elem, build_category_path, format_type):
         for param_elem in param_elems:
             key = param_elem.get('name')
             value = param_elem.text or ""
+            
+            # Очистка любых полей с размерами от вопросительных знаков
+            # Проверяем название поля и содержание на наличие признаков размера
+            if (key and ('размер' in key.lower() or 'size' in key.lower())) or \
+               (value and '?' in value and (value.replace('?', '').strip().isdigit() or 
+                                          any(c.isdigit() for c in value))):
+                value = value.replace('?', '').strip()
+            
             if key in params:
                 params[key] += f", {value}"
             else:
@@ -358,17 +387,29 @@ async def process_link(link_url, base_url):
         category_names = set()
         for row in combined_data["offers"]:
             category_names.update(row.keys())
+        # Фильтрация ненужных колонок, но сохраняем Размер
+        excluded_columns = ['param', 'param_name', 'param_unit', 'pictures']
+        # Сохраняем важные колонки, такие как "Размер"
+        important_columns = ['Размер']
+        filtered_category_names = [col for col in sorted(category_names) if col not in excluded_columns or col in important_columns]
+        
         with open(file_path, 'w', newline='', encoding='utf-8-sig') as file:
             writer = csv.DictWriter(file,
-                                    fieldnames=sorted(category_names),
+                                    fieldnames=filtered_category_names,
                                     delimiter=';')
             writer.writeheader()
             for offer in combined_data["offers"]:
-                for key, value in offer.items():
+                # Удаляем ненужные колонки из каждого предложения
+                filtered_offer = {k: v for k, v in offer.items() if k not in excluded_columns}
+                for key, value in filtered_offer.items():
                     if isinstance(value, str):
-                        offer[key] = value.replace('"', '""').replace(
+                        # Дополнительная очистка для размеров
+                        if 'размер' in key.lower() or 'size' in key.lower() or key == 'Размер':
+                            value = value.replace('?', '').strip()
+                        
+                        filtered_offer[key] = value.replace('"', '""').replace(
                             '\n', ' ').replace('\r', ' ')
-                writer.writerow(offer)
+                writer.writerow(filtered_offer)
         print(f"File saved: {file_path}")
         file_url = f"https://magic-xml.replit.app/download/data_files/{unique_filename}"
         return file_path, file_url
@@ -413,7 +454,7 @@ async def process_link_post(link_data: LinkData, request: Request):
             raise HTTPException(status_code=500, detail=error_detail)
     except ValueError as ve:
         error_message = str(ve)
-        print(f"ValueError during processing: {error_message}")
+        print(f"ValueErrsuggestior during processing: {error_message}")
         raise HTTPException(status_code=500, detail=error_message)
     except Exception as e:
         error_message = f"An unexpected error occurred: {str(e)}"
