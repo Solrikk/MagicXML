@@ -1,74 +1,167 @@
-
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Magic XML - XML to CSV Converter</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/styles.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="icon" type="image/png" href="/static/img/favicon.png">
-</head>
-<body>
-    <header class="header">
-        <div class="logo">Magic<span>XML</span></div>
-        <nav class="user-panel">
-            <a href="/csv_to_xml"><i class="fas fa-exchange-alt"></i> <span class="nav-text" data-en="CSV to XML" data-ru="CSV в XML">CSV в XML</span></a>
-            <a href="https://PicTrace.replit.app"><i class="fas fa-home"></i> <span class="nav-text" data-en="Home" data-ru="Главная">Главная</span></a>
-            <a href="https://PicTrace.replit.app"><i class="fas fa-address-book"></i> <span class="nav-text" data-en="Contacts" data-ru="Контакты">Контакты</span></a>
-            <div class="language-selector">
-                <button id="langToggle"><i class="fas fa-globe"></i> <span id="currentLang">RU</span></button>
-                <div class="language-dropdown">
-                    <a href="#" data-lang="en">English</a>
-                    <a href="#" data-lang="ru">Русский</a>
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Magic XML - XML to CSV Converter</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap"
+            rel="stylesheet"
+        />
+        <link rel="stylesheet" href="/static/css/styles.css" />
+        <link
+            rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+        />
+        <link rel="icon" type="image/png" href="/static/img/favicon.png" />
+    </head>
+    <body>
+        <header class="header">
+            <div class="logo">Magic<span>XML</span></div>
+            <nav class="user-panel">
+                <a href="/csv_to_xml"
+                    ><i class="fas fa-exchange-alt"></i>
+                    <span
+                        class="nav-text"
+                        data-en="CSV to XML"
+                        data-ru="CSV в XML"
+                        >CSV to XML</span
+                    ></a
+                >
+                <a href="https://PicTrace.replit.app"
+                    ><i class="fas fa-home"></i>
+                    <span class="nav-text" data-en="Home" data-ru="Главная"
+                        >Home</span
+                    ></a
+                >
+                <a href="https://PicTrace.replit.app"
+                    ><i class="fas fa-address-book"></i>
+                    <span class="nav-text" data-en="Contacts" data-ru="Контакты"
+                        >Contacts</span
+                    ></a
+                >
+                <div class="language-selector">
+                    <button id="langToggle">
+                        <i class="fas fa-globe"></i>
+                        <span id="currentLang">RU</span>
+                    </button>
+                    <div class="language-dropdown">
+                        <a href="#" data-lang="en">English</a>
+                        <a href="#" data-lang="ru">Русский</a>
+                    </div>
+                </div>
+            </nav>
+        </header>
+
+        <main class="container">
+            <div class="form-container">
+                <h1
+                    class="translate"
+                    data-en="XML Converter"
+                    data-ru="XML Конвертер"
+                >
+                    XML Converter
+                </h1>
+                <p
+                    class="description translate"
+                    data-en="Enter the URL of an XML file, and we will convert it to CSV format for you."
+                    data-ru="Введите URL-адрес XML-файла, и мы преобразуем его в CSV формат для вас."
+                >
+                    Enter the URL of an XML file, and we will convert it to CSV format for you.разуем его в CSV
+                    формат для вас.
+                </p>
+
+                <form id="linkForm" class="input-form">
+                    <div class="input-group">
+                        <label
+                            for="linkUrl"
+                            class="translate"
+                            data-en="XML file URL:"
+                            data-ru="URL-адрес XML файла:"
+                            >URL-адрес XML файла:</label
+                        >
+                        <input
+                            type="text"
+                            id="linkUrl"
+                            name="linkUrl"
+                            placeholder="https://example.com/data.xml"
+                            required
+                        />
+                    </div>
+                    <button type="submit" class="submit-button">
+                        <i class="fas fa-cogs"></i>
+                        <span
+                            class="translate"
+                            data-en="Process XML"
+                            data-ru="Обработать XML"
+                            >Обработать XML</span
+                        >
+                    </button>
+                </form>
+
+                <div id="processingDiv" class="processing">
+                    <div class="spinner"></div>
+                    <p
+                        class="translate"
+                        data-en="Processing your XML file..."
+                        data-ru="Обработка вашего XML файла..."
+                    >
+                        Обработка вашего XML файла...
+                    </p>
+                </div>
+
+                <div id="resultDiv" class="result"></div>
+
+                <div class="actions">
+                    <a href="#" id="downloadLink" class="download-button">
+                        <i class="fas fa-download"></i>
+                        <span
+                            class="translate"
+                            data-en="Download CSV"
+                            data-ru="Скачать CSV"
+                            >Скачать CSV</span
+                        >
+                    </a>
+                    <button
+                        id="anotherProcessButton"
+                        class="another-button"
+                        onclick="resetForm()"
+                    >
+                        <i class="fas fa-redo"></i>
+                        <span
+                            class="translate"
+                            data-en="Process another file"
+                            data-ru="Обработать другой файл"
+                            >Обработать другой файл</span
+                        >
+                    </button>
                 </div>
             </div>
-        </nav>
-    </header>
+        </main>
 
-    <main class="container">
-        <div class="form-container">
-            <h1 class="translate" data-en="XML Converter" data-ru="XML Конвертер">XML Конвертер</h1>
-            <p class="description translate" data-en="Enter the URL of an XML file, and we will convert it to CSV format for you." data-ru="Введите URL-адрес XML-файла, и мы преобразуем его в CSV формат для вас.">Введите URL-адрес XML-файла, и мы преобразуем его в CSV формат для вас.</p>
-            
-            <form id="linkForm" class="input-form">
-                <div class="input-group">
-                    <label for="linkUrl" class="translate" data-en="XML file URL:" data-ru="URL-адрес XML файла:">URL-адрес XML файла:</label>
-                    <input type="text" id="linkUrl" name="linkUrl" placeholder="https://example.com/data.xml" required>
-                </div>
-                <button type="submit" class="submit-button">
-                    <i class="fas fa-cogs"></i> <span class="translate" data-en="Process XML" data-ru="Обработать XML">Обработать XML</span>
-                </button>
-            </form>
+        <footer>
+            <p
+                id="contactInfo"
+                class="translate"
+                data-en="If you have any problems, contact me:"
+                data-ru="Если у вас возникли проблемы, свяжитесь со мной:"
+            >
+                If you have any problems, contact me:
+                <a href="mailto:reveni324@gmail.com">reveni324@gmail.com</a>
+            </p>
+            <p
+                class="copyright translate"
+                data-en="© 2023 MagicXML - XML to CSV Converter"
+                data-ru="© 2023 MagicXML - Конвертер XML в CSV"
+            >
+                © 2025 MagicXML - Конвертер XML в CSV
+            </p>
+            <div class="floating-icon"><i class="fas fa-file-code"></i></div>
+        </footer>
 
-            <div id="processingDiv" class="processing">
-                <div class="spinner"></div>
-                <p class="translate" data-en="Processing your XML file..." data-ru="Обработка вашего XML файла...">Обработка вашего XML файла...</p>
-            </div>
-            
-            <div id="resultDiv" class="result"></div>
-            
-            <div class="actions">
-                <a href="#" id="downloadLink" class="download-button">
-                    <i class="fas fa-download"></i> <span class="translate" data-en="Download CSV" data-ru="Скачать CSV">Скачать CSV</span>
-                </a>
-                <button id="anotherProcessButton" class="another-button" onclick="resetForm()">
-                    <i class="fas fa-redo"></i> <span class="translate" data-en="Process another file" data-ru="Обработать другой файл">Обработать другой файл</span>
-                </button>
-            </div>
-        </div>
-    </main>
-    
-    <footer>
-        <p id="contactInfo" class="translate" data-en="If you have any problems, contact me:" data-ru="Если у вас возникли проблемы, свяжитесь со мной:">Если у вас возникли проблемы, свяжитесь со мной: <a href="mailto:reveni324@gmail.com">reveni324@gmail.com</a></p>
-        <p class="copyright translate" data-en="© 2023 MagicXML - XML to CSV Converter" data-ru="© 2023 MagicXML - Конвертер XML в CSV">© 2025 MagicXML - Конвертер XML в CSV</p>
-        <div class="floating-icon"><i class="fas fa-file-code"></i></div>
-    </footer>
-
-    <script src="/static/js/main.js" defer></script>
-</body>
+        <script src="/static/js/main.js" defer></script>
+    </body>
 </html>
