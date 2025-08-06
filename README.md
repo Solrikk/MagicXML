@@ -23,7 +23,22 @@
 
 ## 🚀 Overview
 
-**MagicXML** is a high-performance web application built with FastAPI that transforms XML data into structured CSV format. Designed for data analysts, developers, and e-commerce professionals, MagicXML handles complex XML structures with advanced parsing capabilities, asyncio-powered processing, and intelligent data classification.
+**MagicXML** is a high-performance web application built with FastAPI that converts data between XML, CSV, Excel, JSON, PDF, and image formats. Designed for data analysts, developers, and e-commerce professionals, MagicXML handles complex structures with advanced parsing capabilities, asyncio-powered processing, and intelligent data classification.
+
+### Supported Conversions
+
+- Convert CSV to XML
+- Convert CSV to Excel
+- Convert Excel to CSV
+- Convert JSON to CSV
+- Convert CSV to JSON
+- Convert XML to JSON
+- JPEG↔PNG image conversion
+- Convert PDF to CSV
+- Convert PDF to Excel
+- Convert PDF to JSON
+- Convert CSV to PDF
+- Convert Excel to PDF
 
 🔗 **Live Demo**: [https://magic-xml.replit.app](https://magic-xml.replit.app)
 
@@ -36,6 +51,8 @@
 - **RESTful API**: Programmatic access for seamless integration with your systems
 - **Callback Support**: Optional webhook notifications when processing is complete
 - **Robust Error Handling**: Comprehensive error management with detailed reporting
+
+- **Versatile Format Conversions**: Convert between CSV, XML, Excel, JSON, PDF, and JPEG/PNG images
 
 ## 🛠️ Technical Architecture
 
