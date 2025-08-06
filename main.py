@@ -31,6 +31,14 @@ try:
 except ImportError:
     tabula = None
 
+import logging
+
+logging.basicConfig(level=logging.INFO,
+                    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+                    handlers=[logging.StreamHandler(),
+                              logging.FileHandler("app.log")])
+logger = logging.getLogger(__name__)
+
 default_app = FastAPI()
 app = default_app
 templates = Jinja2Templates(directory="templates")
@@ -492,7 +500,7 @@ async def process_offers_chunk(offers_chunk, build_category_path, format_type):
 async def process_csv_to_xml(csv_data, source_name, xml_format='yandex_market'):
     if source_name is None or source_name == "":
         source_name = "converted_data"
-    print(f"Converting CSV to XML: {source_name}")
+    logger.info(f"Converting CSV to XML: {source_name}")
     
     # Try different delimiters if semicolon doesn't work
     csv_data_clean = csv_data.strip()
@@ -612,10 +620,10 @@ async def process_csv_to_xml(csv_data, source_name, xml_format='yandex_market'):
 async def process_csv_to_excel(csv_data, source_name):
     if source_name is None or source_name == "":
         source_name = "converted_data"
-    print(f"=== process_csv_to_excel started ===")
-    print(f"Source name: {source_name}")
-    print(f"CSV data length: {len(csv_data)} characters")
-    print(f"CSV data preview (first 500 chars): {csv_data[:500]}")
+    logger.info(f"=== process_csv_to_excel started ===")
+    logger.info(f"Source name: {source_name}")
+    logger.info(f"CSV data length: {len(csv_data)} characters")
+    logger.info(f"CSV data preview (first 500 chars): {csv_data[:500]}")
     
     try:
         from io import StringIO
@@ -627,52 +635,52 @@ async def process_csv_to_excel(csv_data, source_name):
         
         for delimiter in delimiters:
             try:
-                print(f"Trying delimiter: '{delimiter}'")
+                logger.info(f"Trying delimiter: '{delimiter}'")
                 csv_reader = csv.DictReader(StringIO(csv_data), delimiter=delimiter)
                 rows = list(csv_reader)
-                print(f"With delimiter '{delimiter}': found {len(rows)} rows")
+                logger.info(f"With delimiter '{delimiter}': found {len(rows)} rows")
                 if rows and len(rows[0]) > 1:  # Check if we have multiple columns
                     successful_delimiter = delimiter
-                    print(f"Successfully parsed with delimiter '{delimiter}', columns: {list(rows[0].keys())}")
+                    logger.info(f"Successfully parsed with delimiter '{delimiter}', columns: {list(rows[0].keys())}")
                     break
                 elif rows:
-                    print(f"Only one column found with delimiter '{delimiter}': {list(rows[0].keys())}")
+                    logger.info(f"Only one column found with delimiter '{delimiter}': {list(rows[0].keys())}")
             except Exception as e:
-                print(f"Failed to parse with delimiter '{delimiter}': {e}")
+                logger.error(f"Failed to parse with delimiter '{delimiter}': {e}")
                 continue
         
         if not rows:
             error_msg = "CSV file is empty or has invalid format after trying all delimiters"
-            print(f"ERROR: {error_msg}")
+            logger.error(f"ERROR: {error_msg}")
             raise ValueError(error_msg)
         
         if len(rows[0]) == 1 and list(rows[0].keys())[0] == csv_data.strip().split('\n')[0]:
             error_msg = f"CSV file appears to have no column separation. Check delimiter. Used delimiter: '{successful_delimiter}'"
-            print(f"ERROR: {error_msg}")
+            logger.error(f"ERROR: {error_msg}")
             raise ValueError(error_msg)
         
-        print(f"Creating DataFrame with {len(rows)} rows and {len(rows[0])} columns")
+        logger.info(f"Creating DataFrame with {len(rows)} rows and {len(rows[0])} columns")
         df = pd.DataFrame(rows)
-        print(f"DataFrame created. Shape: {df.shape}")
-        print(f"DataFrame columns: {list(df.columns)}")
+        logger.info(f"DataFrame created. Shape: {df.shape}")
+        logger.info(f"DataFrame columns: {list(df.columns)}")
         
         # Clean the data
-        print("Cleaning data...")
+        logger.info("Cleaning data...")
         for col in df.columns:
             if df[col].dtype == 'object':
                 original_values = df[col].value_counts().head()
                 df[col] = df[col].astype(str).replace('nan', '').replace('None', '')
-                print(f"Cleaned column '{col}', sample values: {original_values}")
+                logger.info(f"Cleaned column '{col}', sample values: {original_values}")
         
         # Remove completely empty rows
         original_row_count = len(df)
         df = df.dropna(how='all')
         final_row_count = len(df)
-        print(f"Removed {original_row_count - final_row_count} empty rows")
+        logger.info(f"Removed {original_row_count - final_row_count} empty rows")
         
         if df.empty:
             error_msg = "CSV file contains no valid data after processing"
-            print(f"ERROR: {error_msg}")
+            logger.error(f"ERROR: {error_msg}")
             raise ValueError(error_msg)
         
         os.makedirs("data_files", exist_ok=True)
@@ -686,7 +694,7 @@ async def process_csv_to_excel(csv_data, source_name):
         
         filename = f"{base_name}.xlsx"
         path = os.path.join("data_files", filename)
-        print(f"Creating Excel file: {path}")
+        logger.info(f"Creating Excel file: {path}")
         
         try:
             with pd.ExcelWriter(path, engine='openpyxl') as writer:
@@ -696,7 +704,7 @@ async def process_csv_to_excel(csv_data, source_name):
                 worksheet = writer.sheets['Data']
                 
                 # Auto-adjust column widths
-                print("Adjusting column widths...")
+                logger.info("Adjusting column widths...")
                 for column in worksheet.columns:
                     max_length = 0
                     column_letter = column[0].column_letter
@@ -709,34 +717,34 @@ async def process_csv_to_excel(csv_data, source_name):
                     adjusted_width = min(max_length + 2, 50)
                     worksheet.column_dimensions[column_letter].width = adjusted_width
                 
-            print(f"Successfully created Excel file: {filename}")
-            print(f"File size: {os.path.getsize(path)} bytes")
+            logger.info(f"Successfully created Excel file: {filename}")
+            logger.info(f"File size: {os.path.getsize(path)} bytes")
             return path, filename
             
         except Exception as excel_error:
             error_msg = f"Error creating Excel file: {str(excel_error)}"
-            print(f"ERROR: {error_msg}")
+            logger.error(f"ERROR: {error_msg}")
             import traceback
             traceback.print_exc()
             raise ValueError(error_msg)
         
     except Exception as e:
         error_msg = f"Error in process_csv_to_excel: {str(e)}"
-        print(f"ERROR: {error_msg}")
-        print(f"Error type: {type(e).__name__}")
-        print(f"Error args: {e.args}")
+        logger.error(f"ERROR: {error_msg}")
+        logger.error(f"Error type: {type(e).__name__}")
+        logger.error(f"Error args: {e.args}")
         import traceback
         traceback.print_exc()
         
         # Добавляем больше контекста для отладки
         if hasattr(e, '__cause__') and e.__cause__:
-            print(f"Caused by: {e.__cause__}")
+            logger.info(f"Caused by: {e.__cause__}")
         
         raise ValueError(f"Подробная ошибка конвертации CSV в Excel: {error_msg}")
 
 
 async def process_excel_to_csv(excel_data, source_name):
-    print(f"Converting Excel to CSV: {source_name}")
+    logger.info(f"Converting Excel to CSV: {source_name}")
     
     df = pd.read_excel(BytesIO(excel_data), engine='openpyxl')
     
@@ -761,7 +769,7 @@ async def process_excel_to_csv(excel_data, source_name):
 
 
 async def process_json_to_csv(json_data, source_name):
-    print(f"Converting JSON to CSV: {source_name}")
+    logger.info(f"Converting JSON to CSV: {source_name}")
     
     try:
         data = json.loads(json_data)
@@ -804,7 +812,7 @@ async def process_json_to_csv(json_data, source_name):
 async def process_csv_to_json(csv_data, source_name, json_format='array'):
     if source_name is None or source_name == "":
         source_name = "converted_data"
-    print(f"Converting CSV to JSON: {source_name}")
+    logger.info(f"Converting CSV to JSON: {source_name}")
     
     from io import StringIO
     csv_reader = csv.DictReader(StringIO(csv_data), delimiter=';')
@@ -843,7 +851,7 @@ async def process_csv_to_json(csv_data, source_name, json_format='array'):
 
 
 async def process_xml_to_json(xml_data, source_name):
-    print(f"Converting XML to JSON: {source_name}")
+    logger.info(f"Converting XML to JSON: {source_name}")
     
     def xml_to_dict(element):
         result = {}
@@ -891,7 +899,7 @@ async def process_xml_to_json(xml_data, source_name):
 
 
 async def process_jpg_to_png(image_data, source_name):
-    print(f"Converting JPG to PNG: {source_name}")
+    logger.info(f"Converting JPG to PNG: {source_name}")
     
     try:
         image = Image.open(BytesIO(image_data))
@@ -922,7 +930,7 @@ async def process_pdf_to_csv(pdf_data, source_name, extraction_method='pdfplumbe
     """
     Извлекает таблицы из PDF и конвертирует в CSV
     """
-    print(f"Converting PDF to CSV: {source_name}")
+    logger.info(f"Converting PDF to CSV: {source_name}")
     
     try:
         all_tables = []
@@ -965,10 +973,10 @@ async def process_pdf_to_csv(pdf_data, source_name, extraction_method='pdfplumbe
                     if os.path.exists(temp_pdf_path):
                         os.remove(temp_pdf_path)
                 except Exception as cleanup_error:
-                    print(f"Warning: Could not remove temporary file {temp_pdf_path}: {cleanup_error}")
+                    logger.warning(f"Warning: Could not remove temporary file {temp_pdf_path}: {cleanup_error}")
                     
             except Exception as e:
-                print(f"Tabula extraction failed: {e}, falling back to pdfplumber")
+                logger.error(f"Tabula extraction failed: {e}, falling back to pdfplumber")
                 return await process_pdf_to_csv(pdf_data, source_name, 'pdfplumber')
         
         if not all_tables:
@@ -999,7 +1007,7 @@ async def process_pdf_to_json(pdf_data, source_name):
     """
     Извлекает структурированные данные из PDF и конвертирует в JSON
     """
-    print(f"Converting PDF to JSON: {source_name}")
+    logger.info(f"Converting PDF to JSON: {source_name}")
     
     try:
         extracted_data = {
@@ -1081,7 +1089,7 @@ async def process_csv_to_pdf(csv_data, source_name, report_style='table'):
     """
     Конвертирует CSV в PDF отчет
     """
-    print(f"Converting CSV to PDF: {source_name}")
+    logger.info(f"Converting CSV to PDF: {source_name}")
     
     try:
         from io import StringIO
@@ -1193,7 +1201,7 @@ async def process_excel_to_pdf(excel_data, source_name, report_style='table'):
     """
     Конвертирует Excel в PDF отчет
     """
-    print(f"Converting Excel to PDF: {source_name}")
+    logger.info(f"Converting Excel to PDF: {source_name}")
     
     try:
         df = pd.read_excel(BytesIO(excel_data), engine='openpyxl')
@@ -1211,7 +1219,7 @@ async def process_excel_to_pdf(excel_data, source_name, report_style='table'):
 
 
 async def process_png_to_jpg(image_data, source_name, quality=95):
-    print(f"Converting PNG to JPG: {source_name}")
+    logger.info(f"Converting PNG to JPG: {source_name}")
     
     try:
         image = Image.open(BytesIO(image_data))
@@ -1246,10 +1254,10 @@ async def process_png_to_jpg(image_data, source_name, quality=95):
         raise ValueError(f"Error processing image: {str(e)}")
 
 async def process_xml_data(xml_data, source_name):
-    print(f"Processing data from: {source_name}")
-    print(f"Data length: {len(xml_data)} characters")
+    logger.info(f"Processing data from: {source_name}")
+    logger.info(f"Data length: {len(xml_data)} characters")
 
-    print(f"First 500 characters of response: {xml_data[:500]}")
+    logger.info(f"First 500 characters of response: {xml_data[:500]}")
 
     data_lower = xml_data.strip().lower()
     if data_lower.startswith('<html') or data_lower.startswith('<!doctype html'):
@@ -1258,10 +1266,10 @@ async def process_xml_data(xml_data, source_name):
     if (('error' in data_lower or 'not found' in data_lower or '404' in data_lower) and 
         not xml_data.strip().startswith('<?xml') and 
         not any(tag in data_lower for tag in ['<yml_catalog', '<catalog', '<offers', '<products', '<shop', '<корневой'])):
-        print(f"Error detected in response. Content preview: {xml_data[:200]}")
+        logger.error(f"Error detected in response. Content preview: {xml_data[:200]}")
         raise ValueError(f"Data contains error page.")
 
-    print("Processing as XML file")
+    logger.info("Processing as XML file")
 
     xml_data_clean = xml_data.strip()
 
@@ -1288,40 +1296,40 @@ async def process_xml_data(xml_data, source_name):
         raise ValueError(f"XML file does not contain expected elements (yml_catalog, catalog, offers, products, shop, categories, Russian format, or service format). This may not be a valid XML catalog file.")
 
     try:
-        print("Starting XML parsing...")
+        logger.info("Starting XML parsing...")
         xml_data = xml_data_clean
 
         if xml_data.startswith('\ufeff'):
             xml_data = xml_data[1:]
-            print("Removed BOM")
+            logger.info("Removed BOM")
 
         import re
         original_length = len(xml_data)
         xml_data = re.sub(r'[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]', '', xml_data)
         if len(xml_data) != original_length:
-            print(f"Removed {original_length - len(xml_data)} control characters")
+            logger.info(f"Removed {original_length - len(xml_data)} control characters")
 
         root = ET.fromstring(xml_data)
-        print("XML parsed successfully")
+        logger.info("XML parsed successfully")
     except ET.ParseError as e:
-        print(f"Initial XML parsing failed: {str(e)}")
+        logger.error(f"Initial XML parsing failed: {str(e)}")
         try:
-            print("Attempting to fix XML issues...")
+            logger.info("Attempting to fix XML issues...")
             xml_data = re.sub(r'&(?![a-zA-Z0-9#]+;)', '&amp;', xml_data)
 
             xml_data = re.sub(r'[^\x09\x0A\x0D\x20-\uD7FF\uE000-\uFFFD]', '', xml_data)
 
             root = ET.fromstring(xml_data)
-            print("XML parsing successful after cleanup")
+            logger.info("XML parsing successful after cleanup")
         except ET.ParseError as e2:
-            print(f"XML parsing failed even after cleanup: {str(e2)}")
+            logger.error(f"XML parsing failed even after cleanup: {str(e2)}")
             error_location = str(e2)
             if "line" in error_location and "column" in error_location:
                 raise ValueError(f"XML file contains syntax errors. {error_location}. Make sure the file is properly formatted and contains valid XML.")
             else:
                 raise ValueError(f"XML file is corrupted or contains invalid characters: {str(e2)}")
         except Exception as e3:
-            print(f"Unexpected error during XML cleanup: {str(e3)}")
+            logger.error(f"Unexpected error during XML cleanup: {str(e3)}")
             raise ValueError(f"Error processing XML file: {str(e3)}")
     if root.findall('.//offer'):
         format_type = 'offer'
@@ -1433,7 +1441,7 @@ async def process_xml_data(xml_data, source_name):
     return path, filename
 
 async def process_link(link_url, base_url):
-    print(f"Fetching data from: {link_url}")
+    logger.info(f"Fetching data from: {link_url}")
 
     # Prepare HTTP session; Brotli responses are handled manually
     connector = aiohttp.TCPConnector()
@@ -1463,7 +1471,7 @@ async def process_link(link_url, base_url):
                 if initial_response.status == 200:
                     sample_content = await read_response_text(initial_response)
                     if sample_content.strip().startswith('<?xml') or sample_content.strip().startswith('<yml_catalog'):
-                        print(f"Found valid XML content, proceeding with processing")
+                        logger.info(f"Found valid XML content, proceeding with processing")
                         path, filename = await process_xml_data(sample_content, link_url)
                         return path, f"{base_url}/download/data_files/{filename}"
         except aiohttp.client_exceptions.ClientConnectorError as ce:
@@ -1532,19 +1540,19 @@ async def process_link(link_url, base_url):
         successful_response = None
         for strategy in strategies:
             try:
-                print(f"Trying {strategy['name']}...")
+                logger.info(f"Trying {strategy['name']}...")
                 await asyncio.sleep(2)  # Delay between attempts
                 
                 async with session.get(link_url, headers=strategy['headers'], allow_redirects=True) as response:
-                    print(f"Response status with {strategy['name']}: {response.status}")
+                    logger.info(f"Response status with {strategy['name']}: {response.status}")
                     
                     if response.status == 200:
                         content_type = response.headers.get('content-type', '').lower()
-                        print(f"Content-Type: {content_type}")
+                        logger.info(f"Content-Type: {content_type}")
                         
                         # Check if it's XML content
                         if 'xml' in content_type or 'application/xml' in content_type:
-                            print(f"Successfully accessed XML with {strategy['name']}")
+                            logger.info(f"Successfully accessed XML with {strategy['name']}")
                             sample_content = await read_response_text(response)
                             if sample_content.strip().startswith('<?xml') or sample_content.strip().startswith('<yml_catalog'):
                                 path, filename = await process_xml_data(sample_content, link_url)
@@ -1553,24 +1561,24 @@ async def process_link(link_url, base_url):
                             # Try to read content anyway - some servers return wrong content-type
                             sample_content = await read_response_text(response)
                             if sample_content.strip().startswith('<?xml') or sample_content.strip().startswith('<yml_catalog'):
-                                print(f"Found XML content with {strategy['name']} despite incorrect Content-Type")
+                                logger.info(f"Found XML content with {strategy['name']} despite incorrect Content-Type")
                                 path, filename = await process_xml_data(sample_content, link_url)
                                 return path, f"{base_url}/download/data_files/{filename}"
                         
                         successful_response = response
                         break
                     elif response.status == 404:
-                        print(f"File not found (404) with {strategy['name']}")
+                        logger.info(f"File not found (404) with {strategy['name']}")
                         continue
                     elif response.status == 403:
-                        print(f"Access denied (403) with {strategy['name']}")
+                        logger.info(f"Access denied (403) with {strategy['name']}")
                         continue
                     else:
-                        print(f"Server error ({response.status}) with {strategy['name']}")
+                        logger.error(f"Server error ({response.status}) with {strategy['name']}")
                         continue
                         
             except Exception as e:
-                print(f"{strategy['name']} failed: {e}")
+                logger.error(f"{strategy['name']} failed: {e}")
                 continue
 
         if successful_response is None:
@@ -1585,7 +1593,7 @@ async def process_link(link_url, base_url):
             else:
                 raise ValueError(f"Сервер возвращает HTML страницу вместо XML файла. Проверьте корректность URL и убедитесь, что ссылка ведет непосредственно к XML/YML файлу.")
         except Exception as e:
-            print(f"Error processing final content: {e}")
+            logger.error(f"Error processing final content: {e}")
             raise ValueError(f"Ошибка обработки содержимого файла: {str(e)}")
 
             if 'text/html' in content_type and 'xml' not in content_type:
@@ -1640,24 +1648,24 @@ async def process_link(link_url, base_url):
 
                         for strategy in strategies:
                             try:
-                                print(f"Trying {strategy['name']} to bypass robot blocking...")
+                                logger.info(f"Trying {strategy['name']} to bypass robot blocking...")
                                 await asyncio.sleep(3)
 
                                 async with session.get(link_url, headers=strategy['headers'], allow_redirects=True) as browser_response:
                                     if browser_response.status == 200:
                                         browser_content_type = browser_response.headers.get('content-type', '').lower()
                                         if 'xml' in browser_content_type or 'application/xml' in browser_content_type:
-                                            print(f"Successfully bypassed robot blocking with {strategy['name']}")
+                                            logger.info(f"Successfully bypassed robot blocking with {strategy['name']}")
                                             return
 
                                         test_content = await read_response_text(browser_response)
                                         if test_content.strip().startswith('<?xml') or test_content.strip().startswith('<yml_catalog'):
-                                            print(f"Found XML content with {strategy['name']} despite incorrect Content-Type")
+                                            logger.info(f"Found XML content with {strategy['name']} despite incorrect Content-Type")
                                             path, filename = await process_xml_data(test_content, link_url)
                                             return path, f"{base_url}/download/data_files/{filename}"
 
                             except Exception as e:
-                                print(f"{strategy['name']} failed: {e}")
+                                logger.error(f"{strategy['name']} failed: {e}")
                                 continue
 
                         raise ValueError(f"File is blocked for robots. All bypass attempts failed. Recommendations:\n1. Download file manually through browser\n2. Upload through website form\n3. Contact site owner for direct link")
@@ -1692,7 +1700,7 @@ async def process_link(link_url, base_url):
         except aiohttp.client_exceptions.ConnectionTimeoutError:
             raise ValueError(f"Connection timeout to {urlparse(link_url).netloc}. The server is taking too long to respond. Please try again later.")
         except Exception as e:
-            print(f"Final fetch attempt failed: {e}")
+            logger.error(f"Final fetch attempt failed: {e}")
             raise ValueError(f"Network error while fetching XML data from {link_url}: {str(e)}")
 
         raise ValueError(f"Unable to fetch valid XML data from {link_url}")
@@ -1757,8 +1765,8 @@ async def process_file_upload(file: UploadFile = File(...)):
             else:
                 file_data = content.decode('utf-8', errors='replace')
 
-        print(f"Processing uploaded file: {file.filename}")
-        print(f"File size: {len(file_data)} characters")
+        logger.info(f"Processing uploaded file: {file.filename}")
+        logger.info(f"File size: {len(file_data)} characters")
 
         filename = file.filename or "uploaded_file"
         if filename.lower().endswith('.csv'):
@@ -1777,7 +1785,7 @@ async def process_file_upload(file: UploadFile = File(...)):
         }
 
     except Exception as e:
-        print(f"Error processing uploaded file: {str(e)}")
+        logger.error(f"Error processing uploaded file: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error processing file: {str(e)}")
 
 @app.post("/convert_csv_to_xml")
@@ -1810,62 +1818,62 @@ async def convert_csv_to_xml(file: UploadFile = File(...), xml_format: str = "ya
         }
         
     except Exception as e:
-        print(f"Error converting CSV to XML: {str(e)}")
+        logger.error(f"Error converting CSV to XML: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error converting file: {str(e)}")
 
 
 @app.post("/convert_csv_to_excel")
 async def convert_csv_to_excel(file: UploadFile = File(...)):
     try:
-        print(f"=== CSV to Excel conversion started ===")
-        print(f"File: {file.filename}")
-        print(f"Content type: {file.content_type}")
+        logger.info(f"=== CSV to Excel conversion started ===")
+        logger.info(f"File: {file.filename}")
+        logger.info(f"Content type: {file.content_type}")
         
         if not file.filename.lower().endswith('.csv'):
             error_msg = "Only CSV files are supported"
-            print(f"ERROR: {error_msg}")
+            logger.error(f"ERROR: {error_msg}")
             raise HTTPException(status_code=400, detail=error_msg)
         
         if not file.filename:
             error_msg = "Filename is required"
-            print(f"ERROR: {error_msg}")
+            logger.error(f"ERROR: {error_msg}")
             raise HTTPException(status_code=400, detail=error_msg)
         
         content = await file.read()
-        print(f"File content length: {len(content)} bytes")
+        logger.info(f"File content length: {len(content)} bytes")
         
         if len(content) == 0:
             error_msg = "File is empty"
-            print(f"ERROR: {error_msg}")
+            logger.error(f"ERROR: {error_msg}")
             raise HTTPException(status_code=400, detail=error_msg)
         
         try:
             csv_data = content.decode('utf-8')
-            print("Successfully decoded as UTF-8")
+            logger.info("Successfully decoded as UTF-8")
         except UnicodeDecodeError as decode_error:
-            print(f"UTF-8 decode failed: {decode_error}")
+            logger.error(f"UTF-8 decode failed: {decode_error}")
             for encoding in ['windows-1251', 'latin1', 'iso-8859-1', 'cp1252']:
                 try:
                     csv_data = content.decode(encoding)
-                    print(f"Successfully decoded as {encoding}")
+                    logger.info(f"Successfully decoded as {encoding}")
                     break
                 except UnicodeDecodeError:
-                    print(f"Failed to decode as {encoding}")
+                    logger.error(f"Failed to decode as {encoding}")
                     continue
             else:
-                print("All encoding attempts failed, using UTF-8 with error replacement")
+                logger.error("All encoding attempts failed, using UTF-8 with error replacement")
                 csv_data = content.decode('utf-8', errors='replace')
         
         if not csv_data.strip():
             error_msg = "CSV file contains no data after decoding"
-            print(f"ERROR: {error_msg}")
+            logger.error(f"ERROR: {error_msg}")
             raise HTTPException(status_code=400, detail=error_msg)
         
-        print(f"CSV data preview (first 200 chars): {csv_data[:200]}")
+        logger.info(f"CSV data preview (first 200 chars): {csv_data[:200]}")
         
         try:
             path, filename = await process_csv_to_excel(csv_data, file.filename)
-            print(f"Conversion successful: {filename}")
+            logger.info(f"Conversion successful: {filename}")
             
             result = {
                 "file_url": f"/download/data_files/{filename}",
@@ -1873,22 +1881,22 @@ async def convert_csv_to_excel(file: UploadFile = File(...)):
                 "filename": filename,
                 "format": "excel"
             }
-            print(f"Returning result: {result}")
+            logger.info(f"Returning result: {result}")
             return result
             
         except Exception as conversion_error:
             error_msg = f"Error in conversion process: {str(conversion_error)}"
-            print(f"ERROR: {error_msg}")
+            logger.error(f"ERROR: {error_msg}")
             import traceback
             traceback.print_exc()
             raise HTTPException(status_code=500, detail=error_msg)
         
     except HTTPException as http_error:
-        print(f"HTTP Exception: {http_error.detail}")
+        logger.error(f"HTTP Exception: {http_error.detail}")
         raise
     except Exception as e:
         error_msg = f"Unexpected error converting CSV to Excel: {str(e)}"
-        print(f"ERROR: {error_msg}")
+        logger.error(f"ERROR: {error_msg}")
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=error_msg)
@@ -1911,7 +1919,7 @@ async def convert_excel_to_csv(file: UploadFile = File(...)):
         }
         
     except Exception as e:
-        print(f"Error converting Excel to CSV: {str(e)}")
+        logger.error(f"Error converting Excel to CSV: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error converting file: {str(e)}")
 
 
@@ -1938,7 +1946,7 @@ async def convert_json_to_csv(file: UploadFile = File(...)):
         }
         
     except Exception as e:
-        print(f"Error converting JSON to CSV: {str(e)}")
+        logger.error(f"Error converting JSON to CSV: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error converting file: {str(e)}")
 
 
@@ -1972,7 +1980,7 @@ async def convert_csv_to_json(file: UploadFile = File(...), json_format: str = "
         }
         
     except Exception as e:
-        print(f"Error converting CSV to JSON: {str(e)}")
+        logger.error(f"Error converting CSV to JSON: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error converting file: {str(e)}")
 
 
@@ -2006,7 +2014,7 @@ async def convert_xml_to_json(file: UploadFile = File(...)):
         }
         
     except Exception as e:
-        print(f"Error converting XML to JSON: {str(e)}")
+        logger.error(f"Error converting XML to JSON: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error converting file: {str(e)}")
 
 
@@ -2027,7 +2035,7 @@ async def convert_jpg_to_png(file: UploadFile = File(...)):
         }
         
     except Exception as e:
-        print(f"Error converting JPG to PNG: {str(e)}")
+        logger.error(f"Error converting JPG to PNG: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error converting file: {str(e)}")
 
 
@@ -2048,7 +2056,7 @@ async def convert_png_to_jpg(file: UploadFile = File(...)):
         }
         
     except Exception as e:
-        print(f"Error converting PNG to JPG: {str(e)}")
+        logger.error(f"Error converting PNG to JPG: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error converting file: {str(e)}")
 
 
@@ -2070,7 +2078,7 @@ async def convert_pdf_to_csv(file: UploadFile = File(...), extraction_method: st
         }
         
     except Exception as e:
-        print(f"Error converting PDF to CSV: {str(e)}")
+        logger.error(f"Error converting PDF to CSV: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error converting file: {str(e)}")
 
 
@@ -2104,7 +2112,7 @@ async def convert_pdf_to_excel(file: UploadFile = File(...), extraction_method: 
         }
         
     except Exception as e:
-        print(f"Error converting PDF to Excel: {str(e)}")
+        logger.error(f"Error converting PDF to Excel: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error converting file: {str(e)}")
 
 
@@ -2125,7 +2133,7 @@ async def convert_pdf_to_json(file: UploadFile = File(...)):
         }
         
     except Exception as e:
-        print(f"Error converting PDF to JSON: {str(e)}")
+        logger.error(f"Error converting PDF to JSON: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error converting file: {str(e)}")
 
 
@@ -2160,7 +2168,7 @@ async def convert_csv_to_pdf(file: UploadFile = File(...), report_style: str = "
         }
         
     except Exception as e:
-        print(f"Error converting CSV to PDF: {str(e)}")
+        logger.error(f"Error converting CSV to PDF: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error converting file: {str(e)}")
 
 
@@ -2182,12 +2190,12 @@ async def convert_excel_to_pdf(file: UploadFile = File(...), report_style: str =
         }
         
     except Exception as e:
-        print(f"Error converting Excel to PDF: {str(e)}")
+        logger.error(f"Error converting Excel to PDF: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error converting file: {str(e)}")
 
 @app.post("/process_link")
 async def process_link_post(link_data: LinkData, request: Request):
-    print(f"Processing link: {link_data.link_url}")
+    logger.info(f"Processing link: {link_data.link_url}")
     try:
         path, url = await process_link(link_data.link_url,
                                        str(request.url).rstrip(request.url.path))
@@ -2204,14 +2212,14 @@ async def process_link_post(link_data: LinkData, request: Request):
                                                 json=resp) as res:
                             res.raise_for_status()
                 except Exception as callback_error:
-                    print(f"Callback error: {callback_error}")
+                    logger.error(f"Callback error: {callback_error}")
             return resp
         raise HTTPException(status_code=500, detail="Failed to process the link")
     except ValueError as ve:
-        print(f"ValueError occurred: {str(ve)}")
+        logger.error(f"ValueError occurred: {str(ve)}")
         raise HTTPException(status_code=400, detail=f"Data processing error: {str(ve)}")
     except Exception as e:
-        print(f"Unexpected error occurred: {str(e)}")
+        logger.error(f"Unexpected error occurred: {str(e)}")
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Server error: {str(e)}")
