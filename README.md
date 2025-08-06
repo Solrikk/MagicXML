@@ -87,10 +87,16 @@ git clone https://github.com/Solrikk/MagicXML.git
 cd MagicXML
 
 # Install dependencies
-pip install -r requirements.txt
+poetry install
 
 # Run the application
-python -m uvicorn main:app --host 0.0.0.0 --port 8080 --reload
+poetry run uvicorn main:app --host 0.0.0.0 --port 8080 --reload
+```
+
+Alternatively, install dependencies with `pip`:
+
+```bash
+pip install -r requirements.txt
 ```
 
 ## 🔌 API Reference
