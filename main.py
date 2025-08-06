@@ -6,6 +6,7 @@ from pydantic import BaseModel
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
+from path_utils import get_validated_file_path
 from datetime import datetime
 import xml.etree.ElementTree as ET
 import csv
@@ -2237,17 +2238,19 @@ async def check_processing_status(preset_id: str):
 
 @app.get("/download/data_files/{filename}")
 def download_csv(filename: str):
-    file_path = os.path.join("data_files", filename)
-    if os.path.isfile(file_path):
-        # Security check - ensure filename doesn't contain path traversal
-        if '..' in filename or '/' in filename or '\\' in filename:
-            raise HTTPException(status_code=400, detail="Invalid filename")
-        
-        return FileResponse(path=file_path,
-                            filename=filename,
-                            media_type='application/octet-stream',
-                            headers={"Access-Control-Allow-Origin": "*"})
-    raise HTTPException(status_code=404, detail="File not found")
+    try:
+        file_path = get_validated_file_path(filename)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid filename")
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="File not found")
+
+    return FileResponse(
+        path=file_path,
+        filename=file_path.name,
+        media_type="application/octet-stream",
+        headers={"Access-Control-Allow-Origin": "*"},
+    )
 
 
 if __name__ == "__main__":
