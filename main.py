@@ -92,6 +92,15 @@ def remove_duplicates_from_delimited_string(value, delimiter='///'):
     return delimiter.join(unique_items)
 
 
+async def read_response_text(response):
+    """Read response body and handle Brotli compression if needed."""
+    data = await response.read()
+    if response.headers.get('Content-Encoding', '').lower() == 'br':
+        data = brotli.decompress(data)
+    encoding = response.charset or 'utf-8'
+    return data.decode(encoding, errors='replace')
+
+
 async def split_offers(xml_data, chunk_size, format_type):
     root = ET.fromstring(xml_data)
     if format_type == 'offer':
@@ -1426,7 +1435,7 @@ async def process_xml_data(xml_data, source_name):
 async def process_link(link_url, base_url):
     print(f"Fetching data from: {link_url}")
 
-    # Configure connector to handle Brotli compression
+    # Prepare HTTP session; Brotli responses are handled manually
     connector = aiohttp.TCPConnector()
     timeout = aiohttp.ClientTimeout(total=60)
     async with aiohttp.ClientSession(connector=connector, timeout=timeout) as session:
@@ -1452,7 +1461,7 @@ async def process_link(link_url, base_url):
         try:
             async with session.get(link_url, headers=headers, allow_redirects=True) as initial_response:
                 if initial_response.status == 200:
-                    sample_content = await initial_response.text()
+                    sample_content = await read_response_text(initial_response)
                     if sample_content.strip().startswith('<?xml') or sample_content.strip().startswith('<yml_catalog'):
                         print(f"Found valid XML content, proceeding with processing")
                         path, filename = await process_xml_data(sample_content, link_url)
@@ -1536,13 +1545,13 @@ async def process_link(link_url, base_url):
                         # Check if it's XML content
                         if 'xml' in content_type or 'application/xml' in content_type:
                             print(f"Successfully accessed XML with {strategy['name']}")
-                            sample_content = await response.text()
+                            sample_content = await read_response_text(response)
                             if sample_content.strip().startswith('<?xml') or sample_content.strip().startswith('<yml_catalog'):
                                 path, filename = await process_xml_data(sample_content, link_url)
                                 return path, f"{base_url}/download/data_files/{filename}"
                         else:
                             # Try to read content anyway - some servers return wrong content-type
-                            sample_content = await response.text()
+                            sample_content = await read_response_text(response)
                             if sample_content.strip().startswith('<?xml') or sample_content.strip().startswith('<yml_catalog'):
                                 print(f"Found XML content with {strategy['name']} despite incorrect Content-Type")
                                 path, filename = await process_xml_data(sample_content, link_url)
@@ -1569,7 +1578,7 @@ async def process_link(link_url, base_url):
 
         # If we got here, we have a successful response but couldn't process the content
         try:
-            final_content = await successful_response.text()
+            final_content = await read_response_text(successful_response)
             if final_content.strip().startswith('<?xml') or final_content.strip().startswith('<yml_catalog'):
                 path, filename = await process_xml_data(final_content, link_url)
                 return path, f"{base_url}/download/data_files/{filename}"
@@ -1581,7 +1590,7 @@ async def process_link(link_url, base_url):
 
             if 'text/html' in content_type and 'xml' not in content_type:
                 async with session.get(link_url, headers=headers, allow_redirects=True) as get_response:
-                    sample_content = await get_response.text()
+                    sample_content = await read_response_text(get_response)
                     sample_preview = sample_content[:500].lower()
 
                     if '404' in sample_preview or 'not found' in sample_preview:
@@ -1641,7 +1650,7 @@ async def process_link(link_url, base_url):
                                             print(f"Successfully bypassed robot blocking with {strategy['name']}")
                                             return
 
-                                        test_content = await browser_response.text()
+                                        test_content = await read_response_text(browser_response)
                                         if test_content.strip().startswith('<?xml') or test_content.strip().startswith('<yml_catalog'):
                                             print(f"Found XML content with {strategy['name']} despite incorrect Content-Type")
                                             path, filename = await process_xml_data(test_content, link_url)
@@ -1667,7 +1676,7 @@ async def process_link(link_url, base_url):
         try:
             async with session.get(link_url, allow_redirects=True) as response:
                 if response.status == 200:
-                    data = await response.text()
+                    data = await read_response_text(response)
                     if data and data.strip():
                         path, filename = await process_xml_data(data, link_url)
                         return path, f"{base_url}/download/data_files/{filename}"
