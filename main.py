@@ -6,14 +6,12 @@ from pydantic import BaseModel
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
-from path_utils import get_validated_file_path
 from datetime import datetime
 import xml.etree.ElementTree as ET
 import csv
 import os
 import aiohttp
 import asyncio
-import brotli
 from bs4 import BeautifulSoup
 import re
 import json
@@ -27,18 +25,15 @@ from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 from reportlab.lib.units import inch
+import logging
 try:
     import tabula
 except ImportError:
     tabula = None
 
-import logging
-
-logging.basicConfig(level=logging.INFO,
-                    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-                    handlers=[logging.StreamHandler(),
-                              logging.FileHandler("app.log")])
+logging.basicConfig(level=logging.ERROR, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
+
 
 default_app = FastAPI()
 app = default_app
@@ -65,7 +60,6 @@ def clean_description(description):
     try:
         soup = BeautifulSoup(description, 'html5lib')
     except Exception:
-        # Fallback to lxml or html.parser if html5lib is not available
         try:
             soup = BeautifulSoup(description, 'lxml')
         except Exception:
@@ -101,15 +95,6 @@ def remove_duplicates_from_delimited_string(value, delimiter='///'):
     return delimiter.join(unique_items)
 
 
-async def read_response_text(response):
-    """Read response body and handle Brotli compression if needed."""
-    data = await response.read()
-    if response.headers.get('Content-Encoding', '').lower() == 'br':
-        data = brotli.decompress(data)
-    encoding = response.charset or 'utf-8'
-    return data.decode(encoding, errors='replace')
-
-
 async def split_offers(xml_data, chunk_size, format_type):
     root = ET.fromstring(xml_data)
     if format_type == 'offer':
@@ -133,7 +118,7 @@ async def process_offer(offer_elem, build_category_path, format_type):
     for key, value in offer_elem.attrib.items():
         offer_data[f"attr_{key}"] = value
 
-    image_tags = {'picture', 'photo', 'optionalImages', 'image', 'img'}
+    image_tags = {'picture', 'photo', 'optionalImages', 'image', 'images', 'img'}
 
     for child in offer_elem:
         if child.tag in image_tags:
@@ -198,7 +183,7 @@ async def process_offer(offer_elem, build_category_path, format_type):
         offer_data['category_path'] = 'Undefined'
         offer_data['categoryId'] = 'Undefined'
     excluded = ['param'] if format_type == 'offer' else ['photos', 'fabric', 'features', 'options']
-    image_tags = {'picture', 'photo', 'optionalImages', 'image', 'img'}
+    image_tags = {'picture', 'photo', 'optionalImages', 'image', 'images', 'img'}
 
     for child in offer_elem:
         if child.tag not in excluded and child.tag not in image_tags:
@@ -215,14 +200,26 @@ async def process_offer(offer_elem, build_category_path, format_type):
     all_images = set()
     image_extensions = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp', '.svg']
 
-    for selector in ['.//photo', './/picture', './/image', './/img', './/optionalImages']:
+    for selector in ['.//photo', './/picture', './/image', './/img', './/optionalImages', './/images']:
         for img_elem in offer_elem.findall(selector):
             if img_elem.text and img_elem.text.strip():
                 image_url = img_elem.text.strip()
-                if (any(image_url.lower().endswith(ext) for ext in image_extensions) 
-                    or 'img/' in image_url.lower() 
+                if (any(image_url.lower().endswith(ext) for ext in image_extensions)
+                    or 'img/' in image_url.lower()
                     or image_url.startswith('http')):
                     all_images.add(image_url)
+                    logger.info(f"Image found from tag {img_elem.tag}: {image_url}")
+
+    if format_type == 'product':
+        for offer_child in offer_elem.findall('.//offer'):
+            for selector in ['.//photo', './/picture', './/image', './/img', './/optionalImages']:
+                for img_elem in offer_child.findall(selector):
+                    if img_elem.text and img_elem.text.strip():
+                        image_url = img_elem.text.strip()
+                        if (any(image_url.lower().endswith(ext) for ext in image_extensions)
+                            or 'img/' in image_url.lower()
+                            or image_url.startswith('http')):
+                            all_images.add(image_url)
 
     for elem in offer_elem.iter():
         for attr_name, attr_value in elem.attrib.items():
@@ -231,14 +228,20 @@ async def process_offer(offer_elem, build_category_path, format_type):
                     or attr_value.startswith('http')):
                     all_images.add(attr_value)
 
-    all_images = list(all_images)
+    all_images = sorted(list(all_images))
+
+    if 'id' in offer_data:
+        product_id = offer_data['id']
+        logger.debug(f"Product ID {product_id}: found {len(all_images)} images")
+        if all_images:
+            for i, img in enumerate(all_images, 1):
+                logger.debug(f"  Image {i}: {img}")
 
     if all_images:
         offer_data['pictures'] = "///".join(all_images)
-        offer_data['debug_images_found'] = str(len(all_images))
+        logger.debug(f"Final image string: {offer_data['pictures']}")
     else:
         offer_data['pictures'] = ""
-        offer_data['debug_images_found'] = "0"
     params = {}
     if format_type == 'offer':
         for param_elem in offer_elem.findall('.//param'):
@@ -382,7 +385,7 @@ async def process_russian_xml(root):
                             material_id = row.get(f'{tc_name}_ID_Материала', '')
                             if material_id and material_id not in id_values:
                                 id_values.append(material_id)
-                        
+
                         if values:
                             offer_data[tc_name.lower()] = "///".join(values)
                         if id_values:
@@ -412,7 +415,7 @@ async def process_russian_xml(root):
                 if child.text and child.text.strip():
                     value = child.text.strip()
 
-                    if child.tag in ['ОписаниеДляСайта', 'description']:
+                    if child.tag == 'ОписаниеДляСайта' or child.tag == 'description':
                         value = clean_description(value)
                         offer_data['description'] = value
                     elif child.tag == 'Наименование':
@@ -442,7 +445,7 @@ async def process_russian_xml(root):
 
         if 'ID' in offer_data:
             offer_data['id'] = offer_data['ID']
-        
+
         for key, value in offer_data.items():
             if isinstance(value, str) and '///' in value:
                 offer_data[key] = remove_duplicates_from_delimited_string(value)
@@ -454,45 +457,45 @@ async def process_russian_xml(root):
 
 async def process_service_xml(root):
     offers = []
-    
-    services = root.findall('.//service') if root.findall('.//service') else [root]
-    
-    for service_elem in services:
+
+    for service_elem in root.findall('.//service'):
         service_data = {}
-        
+
         for attr_name, attr_value in service_elem.attrib.items():
             service_data[attr_name] = attr_value
-        
+
         for child in service_elem:
             if child.text and child.text.strip():
                 service_data[child.tag] = child.text.strip()
-            
+
             for attr_name, attr_value in child.attrib.items():
                 column_name = f"{child.tag}_{attr_name}"
                 service_data[column_name] = attr_value
-        
+
         if 'available' not in service_data:
             service_data['available'] = '1'
-            
+
         if 'category_path' not in service_data:
             service_data['category_path'] = service_data.get('name', 'Service')
-            
+
         if 'categoryId' not in service_data:
             service_data['categoryId'] = service_data.get('id', service_data.get('sid', 'service'))
-        
+
         if 'name' in service_data:
             service_data['name'] = sanitize_name(service_data['name'])
-            
+
         service_data['service_type'] = 'verification_service'
-        
+
         offers.append(service_data)
-    
+
     return {"offers": offers}
 
 
 async def process_offers_chunk(offers_chunk, build_category_path, format_type):
     offers = []
     for elem in offers_chunk:
+        if format_type == 'product' and elem.findall('.//offer'):
+            continue
         offers.append(await process_offer(elem, build_category_path,
                                           format_type))
     return {"offers": offers}
@@ -502,40 +505,38 @@ async def process_csv_to_xml(csv_data, source_name, xml_format='yandex_market'):
     if source_name is None or source_name == "":
         source_name = "converted_data"
     logger.info(f"Converting CSV to XML: {source_name}")
-    
-    # Try different delimiters if semicolon doesn't work
+
     csv_data_clean = csv_data.strip()
     if not csv_data_clean:
         raise ValueError("CSV data is empty")
-    
-    # Auto-detect delimiter
+
     delimiter = ';'
     sample = csv_data_clean.split('\n')[0] if '\n' in csv_data_clean else csv_data_clean
     if sample.count(',') > sample.count(';'):
         delimiter = ','
-    
+
     csv_reader = csv.DictReader(csv_data_clean.split('\n'), delimiter=delimiter)
     rows = list(csv_reader)
-    
+
     if not rows:
         raise ValueError("CSV file is empty or invalid")
-    
+
     if xml_format == 'yandex_market':
         root = ET.Element('yml_catalog', date=datetime.now().strftime('%Y-%m-%d %H:%M'))
         shop = ET.SubElement(root, 'shop')
-        
+
         ET.SubElement(shop, 'name').text = 'Generated from CSV'
         ET.SubElement(shop, 'company').text = 'MagicXML'
         ET.SubElement(shop, 'url').text = 'https://magic-xml.replit.app'
-        
+
         currencies = ET.SubElement(shop, 'currencies')
         ET.SubElement(currencies, 'currency', id='RUR', rate='1')
-        
+
         categories = ET.SubElement(shop, 'categories')
         unique_categories = set()
         category_id = 1
         category_map = {}
-        
+
         for row in rows:
             if 'category_path' in row and row['category_path']:
                 cat_path = row['category_path']
@@ -544,41 +545,41 @@ async def process_csv_to_xml(csv_data, source_name, xml_format='yandex_market'):
                     category_map[cat_path] = str(category_id)
                     ET.SubElement(categories, 'category', id=str(category_id)).text = cat_path
                     category_id += 1
-        
+
         offers = ET.SubElement(shop, 'offers')
-        
+
         for idx, row in enumerate(rows, 1):
             offer = ET.SubElement(offers, 'offer', id=str(row.get('id', idx)))
-            
+
             if 'available' in row:
                 offer.set('available', row['available'])
-            
+
             basic_fields = ['name', 'price', 'oldprice', 'currencyId', 'vendorCode', 'vendor', 'description']
             for field in basic_fields:
                 if field in row and row[field]:
                     ET.SubElement(offer, field).text = row[field]
-            
+
             if 'category_path' in row and row['category_path'] in category_map:
                 ET.SubElement(offer, 'categoryId').text = category_map[row['category_path']]
-            
+
             if 'pictures' in row and row['pictures']:
                 pictures = row['pictures'].split('///')
                 for pic_url in pictures:
                     if pic_url.strip():
                         ET.SubElement(offer, 'picture').text = pic_url.strip()
-            
+
             for key, value in row.items():
                 if key.startswith('param_') and value:
                     param_name = key.replace('param_', '')
                     ET.SubElement(offer, 'param', name=param_name).text = value
-    
+
     elif xml_format == 'simple':
         root = ET.Element('catalog')
         products = ET.SubElement(root, 'products')
-        
+
         for idx, row in enumerate(rows, 1):
             product = ET.SubElement(products, 'product', id=str(row.get('id', idx)))
-            
+
             for key, value in row.items():
                 if value and key not in ['id']:
                     if key == 'pictures' and '///' in value:
@@ -596,115 +597,109 @@ async def process_csv_to_xml(csv_data, source_name, xml_format='yandex_market'):
                     else:
                         clean_key = key.replace(' ', '_').replace('-', '_')
                         ET.SubElement(product, clean_key).text = value
-    
+
     ET.indent(root, space="  ", level=0)
     xml_string = ET.tostring(root, encoding='unicode', xml_declaration=True)
-    
+
     os.makedirs("data_files", exist_ok=True)
-    
+
     if source_name and source_name.endswith('.csv'):
         base_name = source_name[:-4]
     elif source_name:
         base_name = source_name
     else:
         base_name = "converted_data"
-    
+
     filename = f"{base_name}_{xml_format}.xml"
     path = os.path.join("data_files", filename)
-    
+
     with open(path, 'w', encoding='utf-8') as f:
         f.write(xml_string)
-    
+
     return path, filename
 
 
 async def process_csv_to_excel(csv_data, source_name):
-    if source_name is None or source_name == "":
-        source_name = "converted_data"
     logger.info(f"=== process_csv_to_excel started ===")
     logger.info(f"Source name: {source_name}")
     logger.info(f"CSV data length: {len(csv_data)} characters")
     logger.info(f"CSV data preview (first 500 chars): {csv_data[:500]}")
-    
+
     try:
         from io import StringIO
-        
-        # Try different delimiters
+
         delimiters = [';', ',', '\t']
         rows = None
         successful_delimiter = None
-        
+
         for delimiter in delimiters:
             try:
                 logger.info(f"Trying delimiter: '{delimiter}'")
                 csv_reader = csv.DictReader(StringIO(csv_data), delimiter=delimiter)
                 rows = list(csv_reader)
                 logger.info(f"With delimiter '{delimiter}': found {len(rows)} rows")
-                if rows and len(rows[0]) > 1:  # Check if we have multiple columns
+                if rows and len(rows[0]) > 1:
                     successful_delimiter = delimiter
                     logger.info(f"Successfully parsed with delimiter '{delimiter}', columns: {list(rows[0].keys())}")
                     break
                 elif rows:
-                    logger.info(f"Only one column found with delimiter '{delimiter}': {list(rows[0].keys())}")
+                    logger.warning(f"Only one column found with delimiter '{delimiter}': {list(rows[0].keys())}")
             except Exception as e:
-                logger.error(f"Failed to parse with delimiter '{delimiter}': {e}")
+                logger.error(f"Failed to parse with delimiter '{delimiter}': {e}", exc_info=True)
                 continue
-        
+
         if not rows:
             error_msg = "CSV file is empty or has invalid format after trying all delimiters"
-            logger.error(f"ERROR: {error_msg}")
+            logger.error(error_msg)
             raise ValueError(error_msg)
-        
+
         if len(rows[0]) == 1 and list(rows[0].keys())[0] == csv_data.strip().split('\n')[0]:
             error_msg = f"CSV file appears to have no column separation. Check delimiter. Used delimiter: '{successful_delimiter}'"
-            logger.error(f"ERROR: {error_msg}")
+            logger.error(error_msg)
             raise ValueError(error_msg)
-        
+
         logger.info(f"Creating DataFrame with {len(rows)} rows and {len(rows[0])} columns")
         df = pd.DataFrame(rows)
         logger.info(f"DataFrame created. Shape: {df.shape}")
         logger.info(f"DataFrame columns: {list(df.columns)}")
-        
-        # Clean the data
+
         logger.info("Cleaning data...")
         for col in df.columns:
             if df[col].dtype == 'object':
                 original_values = df[col].value_counts().head()
                 df[col] = df[col].astype(str).replace('nan', '').replace('None', '')
-                logger.info(f"Cleaned column '{col}', sample values: {original_values}")
-        
-        # Remove completely empty rows
+                logger.debug(f"Cleaned column '{col}', sample values: {original_values}")
+
         original_row_count = len(df)
         df = df.dropna(how='all')
         final_row_count = len(df)
         logger.info(f"Removed {original_row_count - final_row_count} empty rows")
-        
+
         if df.empty:
             error_msg = "CSV file contains no valid data after processing"
-            logger.error(f"ERROR: {error_msg}")
+            logger.error(error_msg)
             raise ValueError(error_msg)
-        
+
         os.makedirs("data_files", exist_ok=True)
-        
+
         if source_name and source_name.endswith('.csv'):
             base_name = source_name[:-4]
         elif source_name:
             base_name = source_name
         else:
             base_name = "converted_data"
-        
+
         filename = f"{base_name}.xlsx"
         path = os.path.join("data_files", filename)
         logger.info(f"Creating Excel file: {path}")
-        
+
         try:
             with pd.ExcelWriter(path, engine='openpyxl') as writer:
                 df.to_excel(writer, sheet_name='Data', index=False)
-                
+
                 workbook = writer.book
                 worksheet = writer.sheets['Data']
-                
-                # Auto-adjust column widths
+
                 logger.info("Adjusting column widths...")
                 for column in worksheet.columns:
                     max_length = 0
@@ -717,66 +712,55 @@ async def process_csv_to_excel(csv_data, source_name):
                             pass
                     adjusted_width = min(max_length + 2, 50)
                     worksheet.column_dimensions[column_letter].width = adjusted_width
-                
+
             logger.info(f"Successfully created Excel file: {filename}")
             logger.info(f"File size: {os.path.getsize(path)} bytes")
             return path, filename
-            
+
         except Exception as excel_error:
             error_msg = f"Error creating Excel file: {str(excel_error)}"
-            logger.error(f"ERROR: {error_msg}")
-            import traceback
-            traceback.print_exc()
+            logger.error(error_msg, exc_info=True)
             raise ValueError(error_msg)
-        
+
     except Exception as e:
         error_msg = f"Error in process_csv_to_excel: {str(e)}"
-        logger.error(f"ERROR: {error_msg}")
-        logger.error(f"Error type: {type(e).__name__}")
-        logger.error(f"Error args: {e.args}")
-        import traceback
-        traceback.print_exc()
-        
-        # Добавляем больше контекста для отладки
-        if hasattr(e, '__cause__') and e.__cause__:
-            logger.info(f"Caused by: {e.__cause__}")
-        
+        logger.error(error_msg, exc_info=True)
         raise ValueError(f"Подробная ошибка конвертации CSV в Excel: {error_msg}")
 
 
 async def process_excel_to_csv(excel_data, source_name):
     logger.info(f"Converting Excel to CSV: {source_name}")
-    
+
     df = pd.read_excel(BytesIO(excel_data), engine='openpyxl')
-    
+
     if df.empty:
         raise ValueError("Excel file is empty or invalid")
-    
+
     df = df.fillna('')
-    
+
     os.makedirs("data_files", exist_ok=True)
-    
+
     if source_name.endswith(('.xlsx', '.xls')):
         base_name = os.path.splitext(source_name)[0]
     else:
         base_name = source_name
-    
+
     filename = f"{base_name}.csv"
     path = os.path.join("data_files", filename)
-    
+
     df.to_csv(path, sep=';', index=False, encoding='utf-8-sig')
-    
+
     return path, filename
 
 
 async def process_json_to_csv(json_data, source_name):
     logger.info(f"Converting JSON to CSV: {source_name}")
-    
+
     try:
         data = json.loads(json_data)
     except json.JSONDecodeError as e:
         raise ValueError(f"Invalid JSON format: {str(e)}")
-    
+
     if isinstance(data, list):
         df = pd.json_normalize(data)
     elif isinstance(data, dict):
@@ -791,22 +775,22 @@ async def process_json_to_csv(json_data, source_name):
             df = pd.json_normalize([data])
     else:
         raise ValueError("Unsupported JSON structure")
-    
+
     if df.empty:
         raise ValueError("No data found in JSON")
-    
+
     os.makedirs("data_files", exist_ok=True)
-    
+
     if source_name.endswith('.json'):
         base_name = source_name[:-5]
     else:
         base_name = source_name
-    
+
     filename = f"{base_name}.csv"
     path = os.path.join("data_files", filename)
-    
+
     df.to_csv(path, sep=';', index=False, encoding='utf-8-sig')
-    
+
     return path, filename
 
 
@@ -814,14 +798,14 @@ async def process_csv_to_json(csv_data, source_name, json_format='array'):
     if source_name is None or source_name == "":
         source_name = "converted_data"
     logger.info(f"Converting CSV to JSON: {source_name}")
-    
+
     from io import StringIO
     csv_reader = csv.DictReader(StringIO(csv_data), delimiter=';')
     rows = list(csv_reader)
-    
+
     if not rows:
         raise ValueError("CSV file is empty or invalid")
-    
+
     if json_format == 'array':
         json_data = rows
     elif json_format == 'object':
@@ -832,40 +816,40 @@ async def process_csv_to_json(csv_data, source_name, json_format='array'):
         }
     else:
         json_data = rows
-    
+
     os.makedirs("data_files", exist_ok=True)
-    
+
     if source_name and source_name.endswith('.csv'):
         base_name = source_name[:-4]
     elif source_name:
         base_name = source_name
     else:
         base_name = "converted_data"
-    
+
     filename = f"{base_name}.json"
     path = os.path.join("data_files", filename)
-    
+
     with open(path, 'w', encoding='utf-8') as f:
         json.dump(json_data, f, ensure_ascii=False, indent=2)
-    
+
     return path, filename
 
 
 async def process_xml_to_json(xml_data, source_name):
     logger.info(f"Converting XML to JSON: {source_name}")
-    
+
     def xml_to_dict(element):
         result = {}
-        
+
         if element.attrib:
             result.update({f"@{k}": v for k, v in element.attrib.items()})
-        
+
         if element.text and element.text.strip():
             if len(element) == 0:
                 return element.text.strip()
             else:
                 result["#text"] = element.text.strip()
-        
+
         for child in element:
             child_data = xml_to_dict(child)
             if child.tag in result:
@@ -874,142 +858,129 @@ async def process_xml_to_json(xml_data, source_name):
                 result[child.tag].append(child_data)
             else:
                 result[child.tag] = child_data
-        
+
         return result
-    
+
     try:
         root = ET.fromstring(xml_data)
         json_data = {root.tag: xml_to_dict(root)}
     except ET.ParseError as e:
         raise ValueError(f"Invalid XML format: {str(e)}")
-    
+
     os.makedirs("data_files", exist_ok=True)
-    
+
     if source_name.endswith('.xml'):
         base_name = source_name[:-4]
     else:
         base_name = source_name
-    
+
     filename = f"{base_name}.json"
     path = os.path.join("data_files", filename)
-    
+
     with open(path, 'w', encoding='utf-8') as f:
         json.dump(json_data, f, ensure_ascii=False, indent=2)
-    
+
     return path, filename
 
 
 async def process_jpg_to_png(image_data, source_name):
     logger.info(f"Converting JPG to PNG: {source_name}")
-    
+
     try:
         image = Image.open(BytesIO(image_data))
-        
-        # Convert to RGB if necessary (in case of RGBA or other modes)
+
         if image.mode != 'RGB' and image.mode != 'RGBA':
             image = image.convert('RGB')
-        
+
         os.makedirs("data_files", exist_ok=True)
-        
+
         if source_name.lower().endswith(('.jpg', '.jpeg')):
             base_name = os.path.splitext(source_name)[0]
         else:
             base_name = source_name
-        
+
         filename = f"{base_name}.png"
         path = os.path.join("data_files", filename)
-        
+
         image.save(path, 'PNG', optimize=True)
-        
+
         return path, filename
-        
+
     except Exception as e:
+        logger.error(f"Error processing image: {str(e)}", exc_info=True)
         raise ValueError(f"Error processing image: {str(e)}")
 
 
 async def process_pdf_to_csv(pdf_data, source_name, extraction_method='pdfplumber'):
-    """
-    Извлекает таблицы из PDF и конвертирует в CSV
-    """
     logger.info(f"Converting PDF to CSV: {source_name}")
-    
+
     try:
         all_tables = []
-        
+
         if extraction_method == 'pdfplumber':
-            # Используем pdfplumber для извлечения таблиц
             with pdfplumber.open(BytesIO(pdf_data)) as pdf:
                 for page_num, page in enumerate(pdf.pages, 1):
                     tables = page.extract_tables()
                     for table_num, table in enumerate(tables):
                         if table and len(table) > 0:
-                            # Преобразуем таблицу в DataFrame
                             df = pd.DataFrame(table[1:], columns=table[0])
                             df = df.dropna(how='all').fillna('')
-                            
-                            # Добавляем метаданные
+
                             df['pdf_page'] = page_num
                             df['table_number'] = table_num + 1
                             all_tables.append(df)
-        
+
         elif extraction_method == 'tabula' and tabula:
-            # Используем tabula-py для более точного извлечения таблиц
             try:
-                # Сохраняем PDF во временный файл
                 temp_pdf_path = "temp_pdf_file.pdf"
                 with open(temp_pdf_path, 'wb') as f:
                     f.write(pdf_data)
-                
-                # Извлекаем таблицы со всех страниц
+
                 tables = tabula.read_pdf(temp_pdf_path, pages='all', multiple_tables=True)
-                
+
                 for table_num, df in enumerate(tables):
                     if not df.empty:
                         df = df.fillna('')
                         df['table_number'] = table_num + 1
                         all_tables.append(df)
-                
-                # Удаляем временный файл
+
                 try:
                     if os.path.exists(temp_pdf_path):
                         os.remove(temp_pdf_path)
                 except Exception as cleanup_error:
-                    logger.warning(f"Warning: Could not remove temporary file {temp_pdf_path}: {cleanup_error}")
-                    
+                    logger.warning(f"Could not remove temporary file {temp_pdf_path}: {cleanup_error}")
+
             except Exception as e:
-                logger.error(f"Tabula extraction failed: {e}, falling back to pdfplumber")
+                logger.error(f"Tabula extraction failed: {e}, falling back to pdfplumber", exc_info=True)
                 return await process_pdf_to_csv(pdf_data, source_name, 'pdfplumber')
-        
+
         if not all_tables:
             raise ValueError("No tables found in PDF file")
-        
-        # Объединяем все таблицы
+
         combined_df = pd.concat(all_tables, ignore_index=True)
-        
+
         os.makedirs("data_files", exist_ok=True)
-        
+
         if source_name.lower().endswith('.pdf'):
             base_name = source_name[:-4]
         else:
             base_name = source_name
-        
+
         filename = f"{base_name}_tables.csv"
         path = os.path.join("data_files", filename)
-        
+
         combined_df.to_csv(path, sep=';', index=False, encoding='utf-8-sig')
-        
+
         return path, filename
-        
+
     except Exception as e:
+        logger.error(f"Error extracting tables from PDF: {str(e)}", exc_info=True)
         raise ValueError(f"Error extracting tables from PDF: {str(e)}")
 
 
 async def process_pdf_to_json(pdf_data, source_name):
-    """
-    Извлекает структурированные данные из PDF и конвертирует в JSON
-    """
     logger.info(f"Converting PDF to JSON: {source_name}")
-    
+
     try:
         extracted_data = {
             "document_info": {},
@@ -1017,10 +988,8 @@ async def process_pdf_to_json(pdf_data, source_name):
             "tables": [],
             "text_content": []
         }
-        
-        # Извлекаем текст и метаданные
+
         with pdfplumber.open(BytesIO(pdf_data)) as pdf:
-            # Метаданные документа
             if pdf.metadata:
                 extracted_data["document_info"] = {
                     "title": pdf.metadata.get('Title', ''),
@@ -1031,8 +1000,7 @@ async def process_pdf_to_json(pdf_data, source_name):
                     "modification_date": str(pdf.metadata.get('ModDate', '')),
                     "pages_count": len(pdf.pages)
                 }
-            
-            # Извлекаем данные с каждой страницы
+
             for page_num, page in enumerate(pdf.pages, 1):
                 page_data = {
                     "page_number": page_num,
@@ -1040,8 +1008,7 @@ async def process_pdf_to_json(pdf_data, source_name):
                     "tables": [],
                     "images_count": len(page.images) if hasattr(page, 'images') else 0
                 }
-                
-                # Извлекаем таблицы
+
                 tables = page.extract_tables()
                 for table_num, table in enumerate(tables):
                     if table and len(table) > 0:
@@ -1057,64 +1024,59 @@ async def process_pdf_to_json(pdf_data, source_name):
                             "page": page_num,
                             **table_data
                         })
-                
+
                 extracted_data["pages"].append(page_data)
-                
-                # Добавляем текст страницы в общий контент
+
                 if page_data["text"]:
                     extracted_data["text_content"].append({
                         "page": page_num,
                         "text": page_data["text"]
                     })
-        
+
         os.makedirs("data_files", exist_ok=True)
-        
+
         if source_name.lower().endswith('.pdf'):
             base_name = source_name[:-4]
         else:
             base_name = source_name
-        
+
         filename = f"{base_name}_data.json"
         path = os.path.join("data_files", filename)
-        
+
         with open(path, 'w', encoding='utf-8') as f:
             json.dump(extracted_data, f, ensure_ascii=False, indent=2)
-        
+
         return path, filename
-        
+
     except Exception as e:
+        logger.error(f"Error extracting data from PDF: {str(e)}", exc_info=True)
         raise ValueError(f"Error extracting data from PDF: {str(e)}")
 
 
 async def process_csv_to_pdf(csv_data, source_name, report_style='table'):
-    """
-    Конвертирует CSV в PDF отчет
-    """
     logger.info(f"Converting CSV to PDF: {source_name}")
-    
+
     try:
         from io import StringIO
         csv_reader = csv.DictReader(StringIO(csv_data), delimiter=';')
         rows = list(csv_reader)
-        
+
         if not rows:
             raise ValueError("CSV file is empty or invalid")
-        
+
         os.makedirs("data_files", exist_ok=True)
-        
+
         if source_name.lower().endswith('.csv'):
             base_name = source_name[:-4]
         else:
             base_name = source_name
-        
+
         filename = f"{base_name}_report.pdf"
         path = os.path.join("data_files", filename)
-        
-        # Создаем PDF документ
-        doc = SimpleDocTemplate(path, pagesize=A4, rightMargin=30, leftMargin=30, 
+
+        doc = SimpleDocTemplate(path, pagesize=A4, rightMargin=30, leftMargin=30,
                               topMargin=30, bottomMargin=18)
-        
-        # Стили
+
         styles = getSampleStyleSheet()
         title_style = ParagraphStyle(
             'CustomTitle',
@@ -1122,29 +1084,24 @@ async def process_csv_to_pdf(csv_data, source_name, report_style='table'):
             fontSize=16,
             spaceAfter=30,
             textColor=colors.darkblue,
-            alignment=1  # центрирование
+            alignment=1
         )
-        
-        # Элементы документа
+
         story = []
-        
-        # Заголовок
+
         title = Paragraph(f"Отчет: {base_name}", title_style)
         story.append(title)
         story.append(Spacer(1, 12))
-        
+
         if report_style == 'table':
-            # Создаем таблицу
             headers = list(rows[0].keys())
             table_data = [headers]
-            
-            for row in rows[:50]:  # Ограничиваем количество строк для PDF
+
+            for row in rows[:50]:
                 table_data.append([str(row.get(header, '')) for header in headers])
-            
-            # Создаем таблицу с автоматической шириной колонок
+
             table = Table(table_data)
-            
-            # Стили таблицы
+
             table.setStyle(TableStyle([
                 ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
                 ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
@@ -1156,105 +1113,275 @@ async def process_csv_to_pdf(csv_data, source_name, report_style='table'):
                 ('FONTSIZE', (0, 1), (-1, -1), 8),
                 ('GRID', (0, 0), (-1, -1), 1, colors.black)
             ]))
-            
+
             story.append(table)
-            
+
         elif report_style == 'summary':
-            # Создаем сводный отчет
             summary_text = f"""
             <b>Сводка по данным:</b><br/>
             • Общее количество записей: {len(rows)}<br/>
             • Количество полей: {len(rows[0].keys()) if rows else 0}<br/>
             • Поля данных: {', '.join(rows[0].keys()) if rows else 'Нет данных'}<br/>
             """
-            
+
             summary = Paragraph(summary_text, styles['Normal'])
             story.append(summary)
             story.append(Spacer(1, 20))
-            
-            # Добавляем первые несколько записей как примеры
+
             story.append(Paragraph("<b>Примеры данных:</b>", styles['Heading3']))
-            
+
             for i, row in enumerate(rows[:5]):
                 example_text = f"<b>Запись {i+1}:</b><br/>"
                 for key, value in row.items():
                     example_text += f"• {key}: {str(value)[:100]}{'...' if len(str(value)) > 100 else ''}<br/>"
-                
+
                 story.append(Paragraph(example_text, styles['Normal']))
                 story.append(Spacer(1, 10))
-        
-        # Добавляем информацию о генерации
+
         footer_text = f"Отчет сгенерирован: {datetime.now().strftime('%d.%m.%Y %H:%M')}"
         footer = Paragraph(footer_text, styles['Normal'])
         story.append(Spacer(1, 30))
         story.append(footer)
-        
-        # Строим документ
+
         doc.build(story)
-        
+
         return path, filename
-        
+
     except Exception as e:
+        logger.error(f"Error creating PDF report: {str(e)}", exc_info=True)
         raise ValueError(f"Error creating PDF report: {str(e)}")
 
 
 async def process_excel_to_pdf(excel_data, source_name, report_style='table'):
-    """
-    Конвертирует Excel в PDF отчет
-    """
     logger.info(f"Converting Excel to PDF: {source_name}")
-    
+
     try:
         df = pd.read_excel(BytesIO(excel_data), engine='openpyxl')
-        
+
         if df.empty:
             raise ValueError("Excel file is empty or invalid")
-        
-        # Конвертируем DataFrame в CSV формат для использования существующей функции
+
         csv_data = df.to_csv(sep=';', index=False)
-        
+
         return await process_csv_to_pdf(csv_data, source_name, report_style)
-        
+
     except Exception as e:
+        logger.error(f"Error converting Excel to PDF: {str(e)}", exc_info=True)
         raise ValueError(f"Error converting Excel to PDF: {str(e)}")
 
 
-async def process_png_to_jpg(image_data, source_name, quality=95):
-    logger.info(f"Converting PNG to JPG: {source_name}")
-    
+async def process_image_to_pdf(image_data, source_name):
+    logger.info(f"Converting image to PDF: {source_name}")
+
     try:
         image = Image.open(BytesIO(image_data))
-        
-        # Convert RGBA to RGB (remove transparency)
+
         if image.mode in ('RGBA', 'LA'):
-            # Create a white background
             background = Image.new('RGB', image.size, (255, 255, 255))
             if image.mode == 'RGBA':
-                background.paste(image, mask=image.split()[-1])  # Use alpha channel as mask
+                background.paste(image, mask=image.split()[-1])
             else:
                 background.paste(image)
             image = background
         elif image.mode != 'RGB':
             image = image.convert('RGB')
-        
-        os.makedirs("data_files", exist_ok=True)
-        
-        if source_name.lower().endswith('.png'):
-            base_name = source_name[:-4]
-        else:
-            base_name = source_name
-        
-        filename = f"{base_name}.jpg"
-        path = os.path.join("data_files", filename)
-        
-        image.save(path, 'JPEG', quality=quality, optimize=True)
-        
-        return path, filename
-        
-    except Exception as e:
-        raise ValueError(f"Error processing image: {str(e)}")
 
-async def process_xml_data(xml_data, source_name):
+        os.makedirs("data_files", exist_ok=True)
+
+        base_name = os.path.splitext(source_name)[0]
+        filename = f"{base_name}.pdf"
+        path = os.path.join("data_files", filename)
+
+        max_width = 595
+        max_height = 842
+
+        img_width_pts = image.width * 72 / 96
+        img_height_pts = image.height * 72 / 96
+
+        if img_width_pts > max_width or img_height_pts > max_height:
+            scale_factor = min(max_width / img_width_pts, max_height / img_height_pts)
+            pdf_width = img_width_pts * scale_factor
+            pdf_height = img_height_pts * scale_factor
+            page_width = max_width
+            page_height = max_height
+        else:
+            pdf_width = img_width_pts
+            pdf_height = img_height_pts
+            page_width = img_width_pts
+            page_height = img_height_pts
+
+        page_width = max(page_width, 72)
+        page_height = max(page_height, 72)
+
+        doc = SimpleDocTemplate(path, pagesize=(page_width, page_height),
+                              rightMargin=0, leftMargin=0, topMargin=0, bottomMargin=0)
+
+        temp_image_path = f"temp_image_{base_name}.jpg"
+        image.save(temp_image_path, 'JPEG', quality=95)
+
+        from reportlab.platypus import Image as ReportLabImage
+
+        x_offset = (page_width - pdf_width) / 2
+        y_offset = (page_height - pdf_height) / 2
+
+        pdf_image = ReportLabImage(temp_image_path, width=pdf_width, height=pdf_height)
+
+        doc.build([pdf_image])
+
+        if os.path.exists(temp_image_path):
+            os.remove(temp_image_path)
+
+        return path, filename
+
+    except Exception as e:
+        temp_image_path = f"temp_image_{os.path.splitext(source_name)[0]}.jpg"
+        if os.path.exists(temp_image_path):
+            os.remove(temp_image_path)
+        logger.error(f"Error converting image to PDF: {str(e)}", exc_info=True)
+        raise ValueError(f"Error converting image to PDF: {str(e)}")
+
+
+async def process_pdf_to_image(pdf_data, source_name, output_format='png', dpi=300):
+    logger.info(f"Converting PDF to {output_format.upper()}: {source_name}")
+
+    try:
+        import fitz
+
+        os.makedirs("data_files", exist_ok=True)
+
+        base_name = os.path.splitext(source_name)[0]
+
+        pdf_document = fitz.open(stream=pdf_data, filetype="pdf")
+
+        if len(pdf_document) == 1:
+            page = pdf_document[0]
+
+            mat = fitz.Matrix(dpi/72, dpi/72)
+            pix = page.get_pixmap(matrix=mat)
+
+            img_data = pix.tobytes("png")
+            image = Image.open(BytesIO(img_data))
+
+            if output_format.lower() == 'jpg':
+                if image.mode in ('RGBA', 'LA'):
+                    background = Image.new('RGB', image.size, (255, 255, 255))
+                    background.paste(image, mask=image.split()[-1] if image.mode == 'RGBA' else None)
+                    image = background
+                elif image.mode != 'RGB':
+                    image = image.convert('RGB')
+
+                filename = f"{base_name}.jpg"
+                path = os.path.join("data_files", filename)
+                image.save(path, 'JPEG', quality=95, optimize=True)
+            else:
+                filename = f"{base_name}.png"
+                path = os.path.join("data_files", filename)
+                image.save(path, 'PNG', optimize=True)
+
+            pdf_document.close()
+            return path, filename
+
+        else:
+            import zipfile
+
+            zip_filename = f"{base_name}_images.zip"
+            zip_path = os.path.join("data_files", zip_filename)
+
+            with zipfile.ZipFile(zip_path, 'w') as zip_file:
+                for page_num in range(len(pdf_document)):
+                    page = pdf_document[page_num]
+
+                    mat = fitz.Matrix(dpi/72, dpi/72)
+                    pix = page.get_pixmap(matrix=mat)
+
+                    img_data = pix.tobytes("png")
+                    image = Image.open(BytesIO(img_data))
+
+                    img_buffer = BytesIO()
+
+                    if output_format.lower() == 'jpg':
+                        if image.mode in ('RGBA', 'LA'):
+                            background = Image.new('RGB', image.size, (255, 255, 255))
+                            background.paste(image, mask=image.split()[-1] if image.mode == 'RGBA' else None)
+                            image = background
+                        elif image.mode != 'RGB':
+                            image = image.convert('RGB')
+
+                        image.save(img_buffer, 'JPEG', quality=95, optimize=True)
+                        img_filename = f"page_{page_num + 1:03d}.jpg"
+                    else:
+                        image.save(img_buffer, 'PNG', optimize=True)
+                        img_filename = f"page_{page_num + 1:03d}.png"
+
+                    zip_file.writestr(img_filename, img_buffer.getvalue())
+
+            pdf_document.close()
+            return zip_path, zip_filename
+
+    except ImportError:
+        try:
+            from pdf2image import convert_from_bytes
+
+            images = convert_from_bytes(pdf_data, dpi=dpi)
+
+            if len(images) == 1:
+                image = images[0]
+
+                if output_format.lower() == 'jpg':
+                    if image.mode in ('RGBA', 'LA'):
+                        background = Image.new('RGB', image.size, (255, 255, 255))
+                        background.paste(image, mask=image.split()[-1] if image.mode == 'RGBA' else None)
+                        image = background
+                    elif image.mode != 'RGB':
+                        image = image.convert('RGB')
+
+                    filename = f"{base_name}.jpg"
+                    path = os.path.join("data_files", filename)
+                    image.save(path, 'JPEG', quality=95, optimize=True)
+                else:
+                    filename = f"{base_name}.png"
+                    path = os.path.join("data_files", filename)
+                    image.save(path, 'PNG', optimize=True)
+
+                return path, filename
+            else:
+                import zipfile
+
+                zip_filename = f"{base_name}_images.zip"
+                zip_path = os.path.join("data_files", zip_filename)
+
+                with zipfile.ZipFile(zip_path, 'w') as zip_file:
+                    for i, image in enumerate(images):
+                        img_buffer = BytesIO()
+
+                        if output_format.lower() == 'jpg':
+                            if image.mode in ('RGBA', 'LA'):
+                                background = Image.new('RGB', image.size, (255, 255, 255))
+                                background.paste(image, mask=image.split()[-1] if image.mode == 'RGBA' else None)
+                                image = background
+                            elif image.mode != 'RGB':
+                                image = image.convert('RGB')
+
+                            image.save(img_buffer, 'JPEG', quality=95, optimize=True)
+                            img_filename = f"page_{i + 1:03d}.jpg"
+                        else:
+                            image.save(img_buffer, 'PNG', optimize=True)
+                            img_filename = f"page_{i + 1:03d}.png"
+
+                        zip_file.writestr(img_filename, img_buffer.getvalue())
+
+                return zip_path, zip_filename
+
+        except ImportError:
+            logger.error("PDF to image conversion requires PyMuPDF (fitz) or pdf2image library. Please install one of them.", exc_info=True)
+            raise ValueError("PDF to image conversion requires PyMuPDF (fitz) or pdf2image library. Please install one of them.")
+
+    except Exception as e:
+        logger.error(f"Error converting PDF to image: {str(e)}", exc_info=True)
+        raise ValueError(f"Error converting PDF to image: {str(e)}")
+
+
+async def process_xml_data(xml_data, source_name, target_node="auto"):
     logger.info(f"Processing data from: {source_name}")
     logger.info(f"Data length: {len(xml_data)} characters")
 
@@ -1264,8 +1391,8 @@ async def process_xml_data(xml_data, source_name):
     if data_lower.startswith('<html') or data_lower.startswith('<!doctype html'):
         raise ValueError(f"Data contains HTML page instead of XML/YML file.")
 
-    if (('error' in data_lower or 'not found' in data_lower or '404' in data_lower) and 
-        not xml_data.strip().startswith('<?xml') and 
+    if (('error' in data_lower or 'not found' in data_lower or '404' in data_lower) and
+        not xml_data.strip().startswith('<?xml') and
         not any(tag in data_lower for tag in ['<yml_catalog', '<catalog', '<offers', '<products', '<shop', '<корневой'])):
         logger.error(f"Error detected in response. Content preview: {xml_data[:200]}")
         raise ValueError(f"Data contains error page.")
@@ -1290,7 +1417,7 @@ async def process_xml_data(xml_data, source_name):
     has_russian_format = '<корневой' in xml_lower or '<элементсправочника' in xml_lower
     has_service_format = '<service' in xml_lower
 
-    has_valid_structure = (has_yml_catalog or has_catalog or has_products or 
+    has_valid_structure = (has_yml_catalog or has_catalog or has_products or
                           has_shop or has_offers or has_categories or has_russian_format or has_service_format)
 
     if not has_valid_structure:
@@ -1313,7 +1440,7 @@ async def process_xml_data(xml_data, source_name):
         root = ET.fromstring(xml_data)
         logger.info("XML parsed successfully")
     except ET.ParseError as e:
-        logger.error(f"Initial XML parsing failed: {str(e)}")
+        logger.error(f"Initial XML parsing failed: {str(e)}", exc_info=True)
         try:
             logger.info("Attempting to fix XML issues...")
             xml_data = re.sub(r'&(?![a-zA-Z0-9#]+;)', '&amp;', xml_data)
@@ -1323,25 +1450,30 @@ async def process_xml_data(xml_data, source_name):
             root = ET.fromstring(xml_data)
             logger.info("XML parsing successful after cleanup")
         except ET.ParseError as e2:
-            logger.error(f"XML parsing failed even after cleanup: {str(e2)}")
+            logger.error(f"XML parsing failed even after cleanup: {str(e2)}", exc_info=True)
             error_location = str(e2)
             if "line" in error_location and "column" in error_location:
                 raise ValueError(f"XML file contains syntax errors. {error_location}. Make sure the file is properly formatted and contains valid XML.")
             else:
                 raise ValueError(f"XML file is corrupted or contains invalid characters: {str(e2)}")
         except Exception as e3:
-            logger.error(f"Unexpected error during XML cleanup: {str(e3)}")
+            logger.error(f"Unexpected error during XML cleanup: {str(e3)}", exc_info=True)
             raise ValueError(f"Error processing XML file: {str(e3)}")
-    if root.findall('.//offer'):
-        format_type = 'offer'
-    elif root.findall('.//product'):
-        format_type = 'product'
-    elif root.findall('.//ЭлементСправочника'):
-        format_type = 'russian'
-    elif root.findall('.//service') or root.tag == 'service':
-        format_type = 'service'
+
+    if target_node == "auto":
+        if root.findall('.//offer'):
+            format_type = 'offer'
+        elif root.findall('.//product'):
+            format_type = 'product'
+        elif root.findall('.//ЭлементСправочника'):
+            format_type = 'russian'
+        elif root.findall('.//service') or root.tag == 'service':
+            format_type = 'service'
+        else:
+            raise ValueError("Unsupported XML format, auto-detection failed.")
     else:
-        raise ValueError("Unsupported XML format")
+        format_type = target_node
+
     categories = {}
     parents = {}
     if format_type == 'offer':
@@ -1412,15 +1544,24 @@ async def process_xml_data(xml_data, source_name):
     excluded = [
         'param', 'param_name', 'param_unit', 'delivery-options',
         'delivery_options', 'delivery_options_xml', 'option_cost',
-        'option_days', 'option_order-before'
+        'option_days', 'option_order-before', 'images', 'debug_images_found', 'offers'
     ]
     important = [
         'Размер', 'delivery_options@cost', 'delivery_options@days',
         'delivery_options@order-before'
     ]
+
+    undefined_only_cols = set()
+    for col in category_names:
+        if col not in excluded:
+            col_values = [offer.get(col, '') for offer in combined["offers"]]
+            unique_values = set(val for val in col_values if val and val.strip())
+            if not unique_values or unique_values == {'Undefined'}:
+                undefined_only_cols.add(col)
+
     fields = [
         col for col in sorted(category_names)
-        if (col not in excluded and not col.replace('.', '', 1).isdigit()) or col in important
+        if (col not in excluded and col not in undefined_only_cols and not col.replace('.', '', 1).isdigit()) or col in important
     ]
     with open(path, 'w', newline='', encoding='utf-8-sig') as f:
         writer = csv.DictWriter(f, fieldnames=fields, delimiter=';', quoting=csv.QUOTE_MINIMAL)
@@ -1441,10 +1582,10 @@ async def process_xml_data(xml_data, source_name):
             writer.writerow(row_data)
     return path, filename
 
-async def process_link(link_url, base_url):
+
+async def process_link(link_url, base_url, target_node="auto"):
     logger.info(f"Fetching data from: {link_url}")
 
-    # Prepare HTTP session; Brotli responses are handled manually
     connector = aiohttp.TCPConnector()
     timeout = aiohttp.ClientTimeout(total=60)
     async with aiohttp.ClientSession(connector=connector, timeout=timeout) as session:
@@ -1470,20 +1611,21 @@ async def process_link(link_url, base_url):
         try:
             async with session.get(link_url, headers=headers, allow_redirects=True) as initial_response:
                 if initial_response.status == 200:
-                    sample_content = await read_response_text(initial_response)
+                    sample_content = await initial_response.text()
                     if sample_content.strip().startswith('<?xml') or sample_content.strip().startswith('<yml_catalog'):
                         logger.info(f"Found valid XML content, proceeding with processing")
-                        path, filename = await process_xml_data(sample_content, link_url)
-                        return path, f"{base_url}/download/data_files/{filename}"
+                        path, filename = await process_xml_data(sample_content, link_url, target_node)
+                        return path, f"https://magic-xml.replit.app/download/data_files/{filename}"
         except aiohttp.client_exceptions.ClientConnectorError as ce:
+            logger.error(f"Connection error to {urlparse(link_url).netloc}: {str(ce)}", exc_info=True)
             if "Connect call failed" in str(ce):
                 raise ValueError(f"Server {urlparse(link_url).netloc} is not accessible. The server may be down or blocking connections. Please check the URL or try again later.")
             else:
                 raise ValueError(f"Connection error to {urlparse(link_url).netloc}: {str(ce)}")
         except aiohttp.client_exceptions.ConnectionTimeoutError:
+            logger.error(f"Connection timeout to {urlparse(link_url).netloc}", exc_info=True)
             raise ValueError(f"Connection timeout to {urlparse(link_url).netloc}. The server is taking too long to respond. Please try again later.")
 
-        # Try different strategies for 403 errors
         strategies = [
             {
                 'name': 'Standard request',
@@ -1542,169 +1684,61 @@ async def process_link(link_url, base_url):
         for strategy in strategies:
             try:
                 logger.info(f"Trying {strategy['name']}...")
-                await asyncio.sleep(2)  # Delay between attempts
-                
+                await asyncio.sleep(2)
+
                 async with session.get(link_url, headers=strategy['headers'], allow_redirects=True) as response:
                     logger.info(f"Response status with {strategy['name']}: {response.status}")
-                    
+
                     if response.status == 200:
                         content_type = response.headers.get('content-type', '').lower()
                         logger.info(f"Content-Type: {content_type}")
-                        
-                        # Check if it's XML content
+
                         if 'xml' in content_type or 'application/xml' in content_type:
                             logger.info(f"Successfully accessed XML with {strategy['name']}")
-                            sample_content = await read_response_text(response)
+                            sample_content = await response.text()
                             if sample_content.strip().startswith('<?xml') or sample_content.strip().startswith('<yml_catalog'):
-                                path, filename = await process_xml_data(sample_content, link_url)
-                                return path, f"{base_url}/download/data_files/{filename}"
+                                path, filename = await process_xml_data(sample_content, link_url, target_node)
+                                return path, f"https://magic-xml.replit.app/download/data_files/{filename}"
                         else:
-                            # Try to read content anyway - some servers return wrong content-type
-                            sample_content = await read_response_text(response)
+                            sample_content = await response.text()
                             if sample_content.strip().startswith('<?xml') or sample_content.strip().startswith('<yml_catalog'):
                                 logger.info(f"Found XML content with {strategy['name']} despite incorrect Content-Type")
-                                path, filename = await process_xml_data(sample_content, link_url)
-                                return path, f"{base_url}/download/data_files/{filename}"
-                        
+                                path, filename = await process_xml_data(sample_content, link_url, target_node)
+                                return path, f"https://magic-xml.replit.app/download/data_files/{filename}"
+
                         successful_response = response
                         break
                     elif response.status == 404:
-                        logger.info(f"File not found (404) with {strategy['name']}")
+                        logger.warning(f"File not found (404) with {strategy['name']}")
                         continue
                     elif response.status == 403:
-                        logger.info(f"Access denied (403) with {strategy['name']}")
+                        logger.warning(f"Access denied (403) with {strategy['name']}")
                         continue
                     else:
-                        logger.error(f"Server error ({response.status}) with {strategy['name']}")
+                        logger.warning(f"Server error ({response.status}) with {strategy['name']}")
                         continue
-                        
+
             except Exception as e:
-                logger.error(f"{strategy['name']} failed: {e}")
+                logger.error(f"{strategy['name']} failed: {e}", exc_info=True)
                 continue
 
         if successful_response is None:
-            raise ValueError(f"Не удается получить доступ к файлу. Сервер блокирует все попытки доступа (403). Возможные причины:\n1. Файл защищен авторизацией\n2. Сайт блокирует автоматические запросы\n3. Требуется специальный токен доступа\n\nРекомендации:\n- Скачайте файл вручную через браузер\n- Загрузите файл через форму на сайте\n- Обратитесь к владельцу сайта за прямой ссылкой")
+            error_message = f"Не удается получить доступ к файлу. Сервер блокирует все попытки доступа (403). Возможные причины:\n1. Файл защищен авторизацией\n2. Сайт блокирует автоматические запросы\n3. Требуется специальный токен доступа\n\nРекомендации:\n- Скачайте файл вручную через браузер\n- Загрузите файл через форму на сайте\n- Обратитесь к владельцу сайта за прямой ссылкой"
+            logger.error(error_message)
+            raise ValueError(error_message)
 
-        # If we got here, we have a successful response but couldn't process the content
         try:
-            final_content = await read_response_text(successful_response)
+            final_content = await successful_response.text()
             if final_content.strip().startswith('<?xml') or final_content.strip().startswith('<yml_catalog'):
-                path, filename = await process_xml_data(final_content, link_url)
-                return path, f"{base_url}/download/data_files/{filename}"
+                path, filename = await process_xml_data(final_content, link_url, target_node)
+                return path, f"https://magic-xml.replit.app/download/data_files/{filename}"
             else:
-                raise ValueError(f"Сервер возвращает HTML страницу вместо XML файла. Проверьте корректность URL и убедитесь, что ссылка ведет непосредственно к XML/YML файлу.")
+                error_message = f"Сервер возвращает HTML страницу вместо XML файла. Проверьте корректность URL и убедитесь, что ссылка ведет непосредственно к XML/YML файлу."
+                logger.error(error_message)
+                raise ValueError(error_message)
         except Exception as e:
-            logger.error(f"Error processing final content: {e}")
+            logger.error(f"Error processing final content: {str(e)}", exc_info=True)
             raise ValueError(f"Ошибка обработки содержимого файла: {str(e)}")
-
-            if 'text/html' in content_type and 'xml' not in content_type:
-                async with session.get(link_url, headers=headers, allow_redirects=True) as get_response:
-                    sample_content = await read_response_text(get_response)
-                    sample_preview = sample_content[:500].lower()
-
-                    if '404' in sample_preview or 'not found' in sample_preview:
-                        raise ValueError(f"File not found on server (404). URL: {link_url} is not available.")
-                    elif 'access denied' in sample_preview or 'forbidden' in sample_preview or 'login' in sample_preview:
-                        raise ValueError(f"File access is restricted. Authorization may be required or file is password protected.")
-                    elif 'robots' in sample_preview and 'noindex' in sample_preview and not (sample_content.strip().startswith('<?xml') or sample_content.strip().startswith('<yml_catalog')):
-                        strategies = [
-                            {
-                                'name': 'Chrome browser simulation',
-                                'headers': {
-                                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
-                                    'Accept-Language': 'ru-RU,ru;q=0.9,en;q=0.8',
-                                    'Accept-Encoding': 'gzip, deflate, br',
-                                    'Referer': f'https://{urlparse(link_url).netloc}/',
-                                    'Origin': f'https://{urlparse(link_url).netloc}',
-                                    'Sec-Fetch-Dest': 'document',
-                                    'Sec-Fetch-Mode': 'navigate',
-                                    'Sec-Fetch-Site': 'same-origin',
-                                    'Sec-Fetch-User': '?1',
-                                    'Upgrade-Insecure-Requests': '1',
-                                    'sec-ch-ua': '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
-                                    'sec-ch-ua-mobile': '?0',
-                                    'sec-ch-ua-platform': '"Windows"',
-                                    'Cache-Control': 'max-age=0'
-                                }
-                            },
-                            {
-                                'name': 'Firefox browser simulation',
-                                'headers': {
-                                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:122.0) Gecko/20100101 Firefox/122.0',
-                                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-                                    'Accept-Language': 'ru-RU,ru;q=0.8,en-US;q=0.5,en;q=0.3',
-                                    'Accept-Encoding': 'gzip, deflate, br',
-                                    'Referer': f'https://{urlparse(link_url).netloc}/',
-                                    'DNT': '1',
-                                    'Connection': 'keep-alive',
-                                    'Upgrade-Insecure-Requests': '1',
-                                    'Sec-Fetch-Dest': 'document',
-                                    'Sec-Fetch-Mode': 'navigate',
-                                    'Sec-Fetch-Site': 'same-origin',
-                                    'Sec-Fetch-User': '?1'
-                                }
-                            }
-                        ]
-
-                        for strategy in strategies:
-                            try:
-                                logger.info(f"Trying {strategy['name']} to bypass robot blocking...")
-                                await asyncio.sleep(3)
-
-                                async with session.get(link_url, headers=strategy['headers'], allow_redirects=True) as browser_response:
-                                    if browser_response.status == 200:
-                                        browser_content_type = browser_response.headers.get('content-type', '').lower()
-                                        if 'xml' in browser_content_type or 'application/xml' in browser_content_type:
-                                            logger.info(f"Successfully bypassed robot blocking with {strategy['name']}")
-                                            return
-
-                                        test_content = await read_response_text(browser_response)
-                                        if test_content.strip().startswith('<?xml') or test_content.strip().startswith('<yml_catalog'):
-                                            logger.info(f"Found XML content with {strategy['name']} despite incorrect Content-Type")
-                                            path, filename = await process_xml_data(test_content, link_url)
-                                            return path, f"{base_url}/download/data_files/{filename}"
-
-                            except Exception as e:
-                                logger.error(f"{strategy['name']} failed: {e}")
-                                continue
-
-                        raise ValueError(f"File is blocked for robots. All bypass attempts failed. Recommendations:\n1. Download file manually through browser\n2. Upload through website form\n3. Contact site owner for direct link")
-                    elif 'cloudflare' in sample_preview or 'ddos' in sample_preview:
-                        raise ValueError(f"Site is protected by DDoS protection system. Try again later or contact site owner.")
-                    else:
-                        raise ValueError(f"Server returns HTML page (Content-Type: {content_type}) instead of XML file. Check URL correctness and make sure it leads directly to XML/YML file.")
-        except aiohttp.client_exceptions.ClientConnectorError as ce:
-            if "Connect call failed" in str(ce):
-                raise ValueError(f"Server {urlparse(link_url).netloc} is not accessible. The server may be down or blocking connections. Please check the URL or try again later.")
-            else:
-                raise ValueError(f"Connection error to {urlparse(link_url).netloc}: {str(ce)}")
-        except aiohttp.client_exceptions.ConnectionTimeoutError:
-            raise ValueError(f"Connection timeout to {urlparse(link_url).netloc}. The server is taking too long to respond. Please try again later.")
-
-        try:
-            async with session.get(link_url, allow_redirects=True) as response:
-                if response.status == 200:
-                    data = await read_response_text(response)
-                    if data and data.strip():
-                        path, filename = await process_xml_data(data, link_url)
-                        return path, f"{base_url}/download/data_files/{filename}"
-                else:
-                    raise ValueError(f"HTTP {response.status}: Unable to fetch data from {link_url}")
-        except ValueError as ve:
-            raise ve
-        except aiohttp.client_exceptions.ClientConnectorError as ce:
-            if "Connect call failed" in str(ce):
-                raise ValueError(f"Server {urlparse(link_url).netloc} is not accessible. The server may be down or blocking connections. Please check the URL or try again later.")
-            else:
-                raise ValueError(f"Connection error to {urlparse(link_url).netloc}: {str(ce)}")
-        except aiohttp.client_exceptions.ConnectionTimeoutError:
-            raise ValueError(f"Connection timeout to {urlparse(link_url).netloc}. The server is taking too long to respond. Please try again later.")
-        except Exception as e:
-            logger.error(f"Final fetch attempt failed: {e}")
-            raise ValueError(f"Network error while fetching XML data from {link_url}: {str(e)}")
-
-        raise ValueError(f"Unable to fetch valid XML data from {link_url}")
 
 
 @app.get("/")
@@ -1724,18 +1758,15 @@ def sitemap_xml():
 
 @app.get("/api/user-info")
 def get_user_info(request: Request):
-    # Get user IP address
     user_ip = request.client.host
     if user_ip == "127.0.0.1" or user_ip.startswith("172."):
-        # For local/docker environments, try to get real IP from headers
         user_ip = request.headers.get("x-forwarded-for", user_ip)
         if "," in user_ip:
             user_ip = user_ip.split(",")[0].strip()
-    
-    # Generate unique user ID based on IP
+
     import hashlib
     user_id = hashlib.md5(user_ip.encode()).hexdigest()[:8].upper()
-    
+
     return {
         "user_id": user_id,
         "ip_address": user_ip
@@ -1745,12 +1776,11 @@ def get_user_info(request: Request):
 @app.post("/process_file")
 async def process_file_upload(file: UploadFile = File(...)):
     try:
-        # Check file size (100MB limit)
-        MAX_FILE_SIZE = 100 * 1024 * 1024  # 100MB
+        MAX_FILE_SIZE = 100 * 1024 * 1024
         content = await file.read()
         if len(content) > MAX_FILE_SIZE:
             raise HTTPException(status_code=413, detail="File too large. Maximum size is 100MB")
-        
+
         if len(content) == 0:
             raise HTTPException(status_code=400, detail="File is empty")
 
@@ -1776,6 +1806,8 @@ async def process_file_upload(file: UploadFile = File(...)):
             path, output_filename = await process_excel_to_csv(content, filename)
         elif filename.lower().endswith('.json'):
             path, output_filename = await process_json_to_csv(file_data, filename)
+        elif filename.lower().endswith(('.jpg', '.jpeg', '.png')):
+            path, output_filename = await process_image_to_pdf(content, filename)
         else:
             path, output_filename = await process_xml_data(file_data, filename)
 
@@ -1786,7 +1818,7 @@ async def process_file_upload(file: UploadFile = File(...)):
         }
 
     except Exception as e:
-        logger.error(f"Error processing uploaded file: {str(e)}")
+        logger.error(f"Error processing uploaded file: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Error processing file: {str(e)}")
 
 @app.post("/convert_csv_to_xml")
@@ -1794,9 +1826,9 @@ async def convert_csv_to_xml(file: UploadFile = File(...), xml_format: str = "ya
     try:
         if not file.filename.lower().endswith('.csv'):
             raise HTTPException(status_code=400, detail="Only CSV files are supported")
-        
+
         content = await file.read()
-        
+
         try:
             csv_data = content.decode('utf-8')
         except UnicodeDecodeError:
@@ -1808,18 +1840,18 @@ async def convert_csv_to_xml(file: UploadFile = File(...), xml_format: str = "ya
                     continue
             else:
                 csv_data = content.decode('utf-8', errors='replace')
-        
+
         path, filename = await process_csv_to_xml(csv_data, file.filename, xml_format)
-        
+
         return {
             "file_url": f"/download/data_files/{filename}",
             "status": "completed",
             "filename": filename,
             "format": xml_format
         }
-        
+
     except Exception as e:
-        logger.error(f"Error converting CSV to XML: {str(e)}")
+        logger.error(f"Error converting CSV to XML: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Error converting file: {str(e)}")
 
 
@@ -1829,53 +1861,53 @@ async def convert_csv_to_excel(file: UploadFile = File(...)):
         logger.info(f"=== CSV to Excel conversion started ===")
         logger.info(f"File: {file.filename}")
         logger.info(f"Content type: {file.content_type}")
-        
+
         if not file.filename.lower().endswith('.csv'):
             error_msg = "Only CSV files are supported"
-            logger.error(f"ERROR: {error_msg}")
+            logger.error(error_msg)
             raise HTTPException(status_code=400, detail=error_msg)
-        
+
         if not file.filename:
             error_msg = "Filename is required"
-            logger.error(f"ERROR: {error_msg}")
+            logger.error(error_msg)
             raise HTTPException(status_code=400, detail=error_msg)
-        
+
         content = await file.read()
         logger.info(f"File content length: {len(content)} bytes")
-        
+
         if len(content) == 0:
             error_msg = "File is empty"
-            logger.error(f"ERROR: {error_msg}")
+            logger.error(error_msg)
             raise HTTPException(status_code=400, detail=error_msg)
-        
+
         try:
             csv_data = content.decode('utf-8')
             logger.info("Successfully decoded as UTF-8")
         except UnicodeDecodeError as decode_error:
-            logger.error(f"UTF-8 decode failed: {decode_error}")
+            logger.warning(f"UTF-8 decode failed: {decode_error}")
             for encoding in ['windows-1251', 'latin1', 'iso-8859-1', 'cp1252']:
                 try:
                     csv_data = content.decode(encoding)
                     logger.info(f"Successfully decoded as {encoding}")
                     break
                 except UnicodeDecodeError:
-                    logger.error(f"Failed to decode as {encoding}")
+                    logger.warning(f"Failed to decode as {encoding}")
                     continue
             else:
-                logger.error("All encoding attempts failed, using UTF-8 with error replacement")
+                logger.warning("All encoding attempts failed, using UTF-8 with error replacement")
                 csv_data = content.decode('utf-8', errors='replace')
-        
+
         if not csv_data.strip():
             error_msg = "CSV file contains no data after decoding"
-            logger.error(f"ERROR: {error_msg}")
+            logger.error(error_msg)
             raise HTTPException(status_code=400, detail=error_msg)
-        
+
         logger.info(f"CSV data preview (first 200 chars): {csv_data[:200]}")
-        
+
         try:
             path, filename = await process_csv_to_excel(csv_data, file.filename)
             logger.info(f"Conversion successful: {filename}")
-            
+
             result = {
                 "file_url": f"/download/data_files/{filename}",
                 "status": "completed",
@@ -1884,22 +1916,18 @@ async def convert_csv_to_excel(file: UploadFile = File(...)):
             }
             logger.info(f"Returning result: {result}")
             return result
-            
+
         except Exception as conversion_error:
             error_msg = f"Error in conversion process: {str(conversion_error)}"
-            logger.error(f"ERROR: {error_msg}")
-            import traceback
-            traceback.print_exc()
+            logger.error(error_msg, exc_info=True)
             raise HTTPException(status_code=500, detail=error_msg)
-        
+
     except HTTPException as http_error:
         logger.error(f"HTTP Exception: {http_error.detail}")
         raise
     except Exception as e:
         error_msg = f"Unexpected error converting CSV to Excel: {str(e)}"
-        logger.error(f"ERROR: {error_msg}")
-        import traceback
-        traceback.print_exc()
+        logger.error(error_msg, exc_info=True)
         raise HTTPException(status_code=500, detail=error_msg)
 
 
@@ -1908,19 +1936,19 @@ async def convert_excel_to_csv(file: UploadFile = File(...)):
     try:
         if not file.filename.lower().endswith(('.xlsx', '.xls')):
             raise HTTPException(status_code=400, detail="Only Excel files (.xlsx, .xls) are supported")
-        
+
         content = await file.read()
         path, filename = await process_excel_to_csv(content, file.filename)
-        
+
         return {
             "file_url": f"/download/data_files/{filename}",
             "status": "completed",
             "filename": filename,
             "format": "csv"
         }
-        
+
     except Exception as e:
-        logger.error(f"Error converting Excel to CSV: {str(e)}")
+        logger.error(f"Error converting Excel to CSV: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Error converting file: {str(e)}")
 
 
@@ -1929,25 +1957,25 @@ async def convert_json_to_csv(file: UploadFile = File(...)):
     try:
         if not file.filename.lower().endswith('.json'):
             raise HTTPException(status_code=400, detail="Only JSON files are supported")
-        
+
         content = await file.read()
-        
+
         try:
             json_data = content.decode('utf-8')
         except UnicodeDecodeError:
             json_data = content.decode('utf-8', errors='replace')
-        
+
         path, filename = await process_json_to_csv(json_data, file.filename)
-        
+
         return {
             "file_url": f"/download/data_files/{filename}",
             "status": "completed",
             "filename": filename,
             "format": "csv"
         }
-        
+
     except Exception as e:
-        logger.error(f"Error converting JSON to CSV: {str(e)}")
+        logger.error(f"Error converting JSON to CSV: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Error converting file: {str(e)}")
 
 
@@ -1956,9 +1984,9 @@ async def convert_csv_to_json(file: UploadFile = File(...), json_format: str = "
     try:
         if not file.filename.lower().endswith('.csv'):
             raise HTTPException(status_code=400, detail="Only CSV files are supported")
-        
+
         content = await file.read()
-        
+
         try:
             csv_data = content.decode('utf-8')
         except UnicodeDecodeError:
@@ -1970,18 +1998,18 @@ async def convert_csv_to_json(file: UploadFile = File(...), json_format: str = "
                     continue
             else:
                 csv_data = content.decode('utf-8', errors='replace')
-        
+
         path, filename = await process_csv_to_json(csv_data, file.filename, json_format)
-        
+
         return {
             "file_url": f"/download/data_files/{filename}",
             "status": "completed",
             "filename": filename,
             "format": "json"
         }
-        
+
     except Exception as e:
-        logger.error(f"Error converting CSV to JSON: {str(e)}")
+        logger.error(f"Error converting CSV to JSON: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Error converting file: {str(e)}")
 
 
@@ -1990,9 +2018,9 @@ async def convert_xml_to_json(file: UploadFile = File(...)):
     try:
         if not file.filename.lower().endswith('.xml'):
             raise HTTPException(status_code=400, detail="Only XML files are supported")
-        
+
         content = await file.read()
-        
+
         try:
             xml_data = content.decode('utf-8')
         except UnicodeDecodeError:
@@ -2004,18 +2032,18 @@ async def convert_xml_to_json(file: UploadFile = File(...)):
                     continue
             else:
                 xml_data = content.decode('utf-8', errors='replace')
-        
+
         path, filename = await process_xml_to_json(xml_data, file.filename)
-        
+
         return {
             "file_url": f"/download/data_files/{filename}",
             "status": "completed",
             "filename": filename,
             "format": "json"
         }
-        
+
     except Exception as e:
-        logger.error(f"Error converting XML to JSON: {str(e)}")
+        logger.error(f"Error converting XML to JSON: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Error converting file: {str(e)}")
 
 
@@ -2024,19 +2052,19 @@ async def convert_jpg_to_png(file: UploadFile = File(...)):
     try:
         if not file.filename.lower().endswith(('.jpg', '.jpeg')):
             raise HTTPException(status_code=400, detail="Only JPG/JPEG files are supported")
-        
+
         content = await file.read()
         path, filename = await process_jpg_to_png(content, file.filename)
-        
+
         return {
             "file_url": f"/download/data_files/{filename}",
             "status": "completed",
             "filename": filename,
             "format": "png"
         }
-        
+
     except Exception as e:
-        logger.error(f"Error converting JPG to PNG: {str(e)}")
+        logger.error(f"Error converting JPG to PNG: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Error converting file: {str(e)}")
 
 
@@ -2045,19 +2073,19 @@ async def convert_png_to_jpg(file: UploadFile = File(...)):
     try:
         if not file.filename.lower().endswith('.png'):
             raise HTTPException(status_code=400, detail="Only PNG files are supported")
-        
+
         content = await file.read()
         path, filename = await process_png_to_jpg(content, file.filename)
-        
+
         return {
             "file_url": f"/download/data_files/{filename}",
             "status": "completed",
             "filename": filename,
             "format": "jpg"
         }
-        
+
     except Exception as e:
-        logger.error(f"Error converting PNG to JPG: {str(e)}")
+        logger.error(f"Error converting PNG to JPG: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Error converting file: {str(e)}")
 
 
@@ -2066,20 +2094,20 @@ async def convert_pdf_to_csv(file: UploadFile = File(...), extraction_method: st
     try:
         if not file.filename.lower().endswith('.pdf'):
             raise HTTPException(status_code=400, detail="Only PDF files are supported")
-        
+
         content = await file.read()
         path, filename = await process_pdf_to_csv(content, file.filename, extraction_method)
-        
+
         return {
             "file_url": f"/download/data_files/{filename}",
-            "status": "completed", 
+            "status": "completed",
             "filename": filename,
             "format": "csv",
             "extraction_method": extraction_method
         }
-        
+
     except Exception as e:
-        logger.error(f"Error converting PDF to CSV: {str(e)}")
+        logger.error(f"Error converting PDF to CSV: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Error converting file: {str(e)}")
 
 
@@ -2088,22 +2116,19 @@ async def convert_pdf_to_excel(file: UploadFile = File(...), extraction_method: 
     try:
         if not file.filename.lower().endswith('.pdf'):
             raise HTTPException(status_code=400, detail="Only PDF files are supported")
-        
+
         content = await file.read()
-        
-        # Сначала извлекаем в CSV, затем конвертируем в Excel
+
         csv_path, csv_filename = await process_pdf_to_csv(content, file.filename, extraction_method)
-        
-        # Читаем CSV и конвертируем в Excel
+
         with open(csv_path, 'r', encoding='utf-8-sig') as f:
             csv_data = f.read()
-        
+
         excel_path, excel_filename = await process_csv_to_excel(csv_data, file.filename)
-        
-        # Удаляем временный CSV файл
+
         if os.path.exists(csv_path):
             os.remove(csv_path)
-        
+
         return {
             "file_url": f"/download/data_files/{excel_filename}",
             "status": "completed",
@@ -2111,9 +2136,9 @@ async def convert_pdf_to_excel(file: UploadFile = File(...), extraction_method: 
             "format": "excel",
             "extraction_method": extraction_method
         }
-        
+
     except Exception as e:
-        logger.error(f"Error converting PDF to Excel: {str(e)}")
+        logger.error(f"Error converting PDF to Excel: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Error converting file: {str(e)}")
 
 
@@ -2122,19 +2147,19 @@ async def convert_pdf_to_json(file: UploadFile = File(...)):
     try:
         if not file.filename.lower().endswith('.pdf'):
             raise HTTPException(status_code=400, detail="Only PDF files are supported")
-        
+
         content = await file.read()
         path, filename = await process_pdf_to_json(content, file.filename)
-        
+
         return {
             "file_url": f"/download/data_files/{filename}",
             "status": "completed",
             "filename": filename,
             "format": "json"
         }
-        
+
     except Exception as e:
-        logger.error(f"Error converting PDF to JSON: {str(e)}")
+        logger.error(f"Error converting PDF to JSON: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Error converting file: {str(e)}")
 
 
@@ -2143,9 +2168,9 @@ async def convert_csv_to_pdf(file: UploadFile = File(...), report_style: str = "
     try:
         if not file.filename.lower().endswith('.csv'):
             raise HTTPException(status_code=400, detail="Only CSV files are supported")
-        
+
         content = await file.read()
-        
+
         try:
             csv_data = content.decode('utf-8')
         except UnicodeDecodeError:
@@ -2157,9 +2182,9 @@ async def convert_csv_to_pdf(file: UploadFile = File(...), report_style: str = "
                     continue
             else:
                 csv_data = content.decode('utf-8', errors='replace')
-        
+
         path, filename = await process_csv_to_pdf(csv_data, file.filename, report_style)
-        
+
         return {
             "file_url": f"/download/data_files/{filename}",
             "status": "completed",
@@ -2167,9 +2192,9 @@ async def convert_csv_to_pdf(file: UploadFile = File(...), report_style: str = "
             "format": "pdf",
             "report_style": report_style
         }
-        
+
     except Exception as e:
-        logger.error(f"Error converting CSV to PDF: {str(e)}")
+        logger.error(f"Error converting CSV to PDF: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Error converting file: {str(e)}")
 
 
@@ -2178,10 +2203,10 @@ async def convert_excel_to_pdf(file: UploadFile = File(...), report_style: str =
     try:
         if not file.filename.lower().endswith(('.xlsx', '.xls')):
             raise HTTPException(status_code=400, detail="Only Excel files (.xlsx, .xls) are supported")
-        
+
         content = await file.read()
         path, filename = await process_excel_to_pdf(content, file.filename, report_style)
-        
+
         return {
             "file_url": f"/download/data_files/{filename}",
             "status": "completed",
@@ -2189,17 +2214,86 @@ async def convert_excel_to_pdf(file: UploadFile = File(...), report_style: str =
             "format": "pdf",
             "report_style": report_style
         }
-        
+
     except Exception as e:
-        logger.error(f"Error converting Excel to PDF: {str(e)}")
+        logger.error(f"Error converting Excel to PDF: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error converting file: {str(e)}")
+
+
+@app.post("/convert_image_to_pdf")
+async def convert_image_to_pdf(file: UploadFile = File(...)):
+    try:
+        if not file.filename.lower().endswith(('.png', '.jpg', '.jpeg')):
+            raise HTTPException(status_code=400, detail="Only PNG, JPG, and JPEG files are supported")
+
+        content = await file.read()
+        path, filename = await process_image_to_pdf(content, file.filename)
+
+        return {
+            "file_url": f"/download/data_files/{filename}",
+            "status": "completed",
+            "filename": filename,
+            "format": "pdf"
+        }
+
+    except Exception as e:
+        logger.error(f"Error converting image to PDF: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error converting file: {str(e)}")
+
+
+@app.post("/convert_pdf_to_png")
+async def convert_pdf_to_png(file: UploadFile = File(...), dpi: int = 300):
+    try:
+        if not file.filename.lower().endswith('.pdf'):
+            raise HTTPException(status_code=400, detail="Only PDF files are supported")
+
+        content = await file.read()
+        path, filename = await process_pdf_to_image(content, file.filename, 'png', dpi)
+
+        return {
+            "file_url": f"/download/data_files/{filename}",
+            "status": "completed",
+            "filename": filename,
+            "format": "png",
+            "dpi": dpi
+        }
+
+    except Exception as e:
+        logger.error(f"Error converting PDF to PNG: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error converting file: {str(e)}")
+
+
+@app.post("/convert_pdf_to_jpg")
+async def convert_pdf_to_jpg(file: UploadFile = File(...), dpi: int = 300):
+    try:
+        if not file.filename.lower().endswith('.pdf'):
+            raise HTTPException(status_code=400, detail="Only PDF files are supported")
+
+        content = await file.read()
+        path, filename = await process_pdf_to_image(content, file.filename, 'jpg', dpi)
+
+        return {
+            "file_url": f"/download/data_files/{filename}",
+            "status": "completed",
+            "filename": filename,
+            "format": "jpg",
+            "dpi": dpi
+        }
+
+    except Exception as e:
+        logger.error(f"Error converting PDF to JPG: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Error converting file: {str(e)}")
 
 @app.post("/process_link")
 async def process_link_post(link_data: LinkData, request: Request):
     logger.info(f"Processing link: {link_data.link_url}")
+    logger.info(f"Target node: {link_data.preset_id}")
     try:
+        target_node = link_data.preset_id if link_data.preset_id and link_data.preset_id != "" else "auto"
+        logger.info(f"Using target node: {target_node}")
         path, url = await process_link(link_data.link_url,
-                                       str(request.url).rstrip(request.url.path))
+                                       str(request.url).rstrip(request.url.path),
+                                       target_node=target_node)
         if path:
             resp = {
                 "file_url": url,
@@ -2213,16 +2307,14 @@ async def process_link_post(link_data: LinkData, request: Request):
                                                 json=resp) as res:
                             res.raise_for_status()
                 except Exception as callback_error:
-                    logger.error(f"Callback error: {callback_error}")
+                    logger.error(f"Callback error: {callback_error}", exc_info=True)
             return resp
         raise HTTPException(status_code=500, detail="Failed to process the link")
     except ValueError as ve:
-        logger.error(f"ValueError occurred: {str(ve)}")
+        logger.error(f"ValueError occurred: {str(ve)}", exc_info=True)
         raise HTTPException(status_code=400, detail=f"Data processing error: {str(ve)}")
     except Exception as e:
-        logger.error(f"Unexpected error occurred: {str(e)}")
-        import traceback
-        traceback.print_exc()
+        logger.error(f"Unexpected error occurred: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Server error: {str(e)}")
 
 
@@ -2238,19 +2330,16 @@ async def check_processing_status(preset_id: str):
 
 @app.get("/download/data_files/{filename}")
 def download_csv(filename: str):
-    try:
-        file_path = get_validated_file_path(filename)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid filename")
-    except FileNotFoundError:
-        raise HTTPException(status_code=404, detail="File not found")
+    file_path = os.path.join("data_files", filename)
+    if os.path.isfile(file_path):
+        if '..' in filename or '/' in filename or '\\' in filename:
+            raise HTTPException(status_code=400, detail="Invalid filename")
 
-    return FileResponse(
-        path=file_path,
-        filename=file_path.name,
-        media_type="application/octet-stream",
-        headers={"Access-Control-Allow-Origin": "*"},
-    )
+        return FileResponse(path=file_path,
+                            filename=filename,
+                            media_type='application/octet-stream',
+                            headers={"Access-Control-Allow-Origin": "*"})
+    raise HTTPException(status_code=404, detail="File not found")
 
 
 if __name__ == "__main__":
